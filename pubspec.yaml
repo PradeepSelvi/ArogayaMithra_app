@@ -1,0 +1,33 @@
+# ArogyaMitra monorepo root.
+# Uses Dart pub workspaces (Dart >= 3.6) so all apps and packages resolve
+# against a single shared lockfile and .dart_tool.
+name: arogyamitra_workspace
+description: >-
+  ArogyaMitra - multilingual, interoperable care navigation and referral
+  platform. Monorepo root (pub workspace).
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+workspace:
+  # PRD 10.1 - apps/
+  - apps/citizen
+  - apps/asha
+  - apps/facility
+  - apps/dho
+  # PRD 10.1 - packages/
+  - packages/core
+  - packages/models
+  - packages/networking
+  - packages/authentication
+  - packages/localization
+  - packages/maps
+  - packages/ui_components
+
+dev_dependencies:
+  # Pinned so CI and local runs agree (PRD 21.1).
+  build_runner: 2.4.15
+  custom_lint: 0.7.5
+  flutter_lints: 5.0.0
+  riverpod_lint: 2.6.5
