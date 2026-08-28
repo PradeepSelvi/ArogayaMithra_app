@@ -1,0 +1,7 @@
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-dir: lib/src/generated
+output-localization-file: am_strings.dart
+output-class: AmStrings
+nullable-getter: false
+use-escaping: true

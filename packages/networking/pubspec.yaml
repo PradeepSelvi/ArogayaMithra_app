@@ -1,0 +1,24 @@
+name: am_networking
+description: >-
+  ArogyaMitra data layer. Wraps Supabase access behind repositories and keeps
+  every external system behind a replaceable adapter interface (PRD 8.1).
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.41.0"
+
+resolution: workspace
+
+dependencies:
+  am_core: ^0.1.0
+  am_models: ^0.1.0
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  supabase_flutter: ^2.9.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

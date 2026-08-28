@@ -1,0 +1,26 @@
+name: am_localization
+description: >-
+  ArogyaMitra localisation. Tamil is the primary language, English the
+  secondary. No user-facing string is hard-coded (PRD 17).
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.41.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  generate: true

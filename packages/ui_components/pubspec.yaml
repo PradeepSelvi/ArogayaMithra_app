@@ -1,0 +1,23 @@
+name: am_ui
+description: >-
+  ArogyaMitra design system. Large touch targets, high contrast and
+  low-literacy friendly components (PRD 17 accessibility).
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.41.0"
+
+resolution: workspace
+
+dependencies:
+  am_core: ^0.1.0
+  am_localization: ^0.1.0
+  am_models: ^0.1.0
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

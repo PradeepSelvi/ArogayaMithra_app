@@ -1,0 +1,34 @@
+name: arogyamitra_dho
+description: >-
+  ArogyaMitra district and state dashboard: readiness heatmap, referral KPIs,
+  SLA alerts and citizen feedback (PRD 5.4).
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.41.0"
+
+resolution: workspace
+
+dependencies:
+  am_auth: ^0.1.0
+  am_core: ^0.1.0
+  am_localization: ^0.1.0
+  am_models: ^0.1.0
+  am_networking: ^0.1.0
+  am_ui: ^0.1.0
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

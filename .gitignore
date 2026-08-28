@@ -1,0 +1,57 @@
+# ---- Dart / Flutter ----
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+coverage/
+doc/api/
+
+# Generated localization
+**/l10n/generated/
+
+# Android
+**/android/.gradle/
+**/android/local.properties
+**/android/key.properties
+**/android/app/*.jks
+**/android/app/*.keystore
+*.apk
+*.aab
+
+# iOS / macOS
+**/ios/Pods/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/macos/Pods/
+
+# Web
+**/web/.dart_tool/
+
+# ---- Node ----
+node_modules/
+npm-debug.log*
+
+# ---- Supabase ----
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+supabase/functions/**/.env
+
+# ---- Secrets / env ----
+.env
+.env.*
+!.env.example
+
+# ---- Editors / OS ----
+.idea/
+*.iml
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+.DS_Store
+Thumbs.db

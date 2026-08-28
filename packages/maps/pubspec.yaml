@@ -1,0 +1,26 @@
+name: am_maps
+description: >-
+  ArogyaMitra location and routing. Device positioning plus a provider-agnostic
+  directions handoff, kept behind an interface so the mapping provider can be
+  swapped per deployment (PRD 9, 14).
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.41.0"
+
+resolution: workspace
+
+dependencies:
+  am_core: ^0.1.0
+  am_models: ^0.1.0
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  geolocator: ^13.0.2
+  url_launcher: ^6.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
