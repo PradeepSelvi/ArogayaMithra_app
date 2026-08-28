@@ -625,3 +625,166 @@ begin
   end loop;
 end;
 $$;
+
+-- ===========================================================================
+-- LOCAL DEVELOPMENT ACCOUNTS
+--
+-- These exist so the four applications can be run end to end against the local
+-- stack. They are created here, in seed data, and therefore never reach a
+-- deployed environment: PRD 16 requires accounts and roles to be provisioned by
+-- an administrator, and PRD 29 lists the identity provider as an open decision.
+--
+-- Staff password for every account below: ArogyaMitra@2026
+-- Citizen one-time code (see config.toml [auth.sms.test_otp]): 123456
+-- ===========================================================================
+insert into auth.users (
+  instance_id, id, aud, role, email, phone,
+  encrypted_password, email_confirmed_at, phone_confirmed_at,
+  created_at, updated_at, raw_app_meta_data, raw_user_meta_data,
+  -- Auth reads these as plain strings, and four of them have no column default.
+  -- Leaving them NULL makes every sign-in fail with "Database error querying
+  -- schema", so they are set explicitly.
+  confirmation_token, recovery_token, email_change, email_change_token_new
+)
+select
+  '00000000-0000-0000-0000-000000000000',
+  u.id,
+  'authenticated',
+  'authenticated',
+  u.email,
+  u.phone,
+  case when u.email is null then null
+       else extensions.crypt('ArogyaMitra@2026', extensions.gen_salt('bf')) end,
+  case when u.email is null then null else now() end,
+  case when u.phone is null then null else now() end,
+  now(), now(),
+  jsonb_build_object(
+    'provider', case when u.email is null then 'phone' else 'email' end,
+    'providers', jsonb_build_array(
+      case when u.email is null then 'phone' else 'email' end
+    )
+  ),
+  jsonb_build_object('full_name', u.full_name),
+  '', '', '', ''
+from (values
+  -- Medical officer, District Headquarters Hospital
+  ('aaaa0001-0000-4000-8000-000000000001'::uuid,
+   'mo.district@arogyamitra.local', null, 'Dr Ravi Kumar'),
+  -- Medical officer, PHC Polur (a second facility, to demonstrate scope limits)
+  ('aaaa0002-0000-4000-8000-000000000002'::uuid,
+   'mo.polur@arogyamitra.local', null, 'Dr Priya Natarajan'),
+  -- ASHA worker, Tiruvannamalai block
+  ('aaaa0003-0000-4000-8000-000000000003'::uuid,
+   'asha@arogyamitra.local', null, 'Lakshmi Arumugam'),
+  -- District Health Officer
+  ('aaaa0004-0000-4000-8000-000000000004'::uuid,
+   'dho@arogyamitra.local', null, 'DHO Tiruvannamalai'),
+  -- Citizen, signs in with +91 98765 00002.
+  -- Stored without the leading '+': Auth normalises phone numbers that way, and
+  -- a mismatch here silently creates a second account on first sign-in instead
+  -- of matching this one.
+  ('aaaa0005-0000-4000-8000-000000000005'::uuid,
+   null, '919876500002', 'Meena Ravi')
+) as u(id, email, phone, full_name);
+
+-- Identities, so Supabase Auth can resolve the sign-in method.
+insert into auth.identities (
+  provider_id, user_id, identity_data, provider,
+  last_sign_in_at, created_at, updated_at
+)
+select
+  coalesce(u.email, u.phone),
+  u.id,
+  jsonb_build_object(
+    'sub', u.id::text,
+    'email', u.email,
+    'phone', u.phone,
+    'email_verified', u.email is not null,
+    'phone_verified', u.phone is not null
+  ),
+  case when u.email is null then 'phone' else 'email' end,
+  now(), now(), now()
+from auth.users u
+where u.id in (
+  'aaaa0001-0000-4000-8000-000000000001',
+  'aaaa0002-0000-4000-8000-000000000002',
+  'aaaa0003-0000-4000-8000-000000000003',
+  'aaaa0004-0000-4000-8000-000000000004',
+  'aaaa0005-0000-4000-8000-000000000005'
+);
+
+-- Roles and scope. In production this is an administrator action, audited like
+-- any other privileged change (PRD 6 FR-002, FR-023).
+update public.app_users set
+  role = 'medical_officer', status = 'active',
+  district_id = '22222222-2222-2222-2222-222222222222',
+  facility_id = '55555555-0002-0000-0000-000000000002',
+  employee_code = 'MO-TVM-001'
+where id = 'aaaa0001-0000-4000-8000-000000000001';
+
+update public.app_users set
+  role = 'medical_officer', status = 'active',
+  district_id = '22222222-2222-2222-2222-222222222222',
+  facility_id = '55555555-0004-0000-0000-000000000004',
+  employee_code = 'MO-PLR-001'
+where id = 'aaaa0002-0000-4000-8000-000000000002';
+
+update public.app_users set
+  role = 'asha', status = 'active',
+  district_id = '22222222-2222-2222-2222-222222222222',
+  block_id = '33333333-0001-0000-0000-000000000001',
+  employee_code = 'ASHA-TVM-014'
+where id = 'aaaa0003-0000-4000-8000-000000000003';
+
+update public.app_users set
+  role = 'dho', status = 'active',
+  state_id = '11111111-1111-1111-1111-111111111111',
+  district_id = '22222222-2222-2222-2222-222222222222',
+  employee_code = 'DHO-TVM'
+where id = 'aaaa0004-0000-4000-8000-000000000004';
+
+update public.app_users set
+  role = 'citizen', status = 'active', preferred_language = 'ta'
+where id = 'aaaa0005-0000-4000-8000-000000000005';
+
+-- ---------------------------------------------------------------------------
+-- A household on the ASHA worker's list, with members whose risk context
+-- exercises different branches of the triage rule set.
+-- ---------------------------------------------------------------------------
+insert into public.households (
+  id, code, village_id, address_line, landmark, head_of_household,
+  contact_phone, assigned_worker_id, created_by
+) values
+  ('99990001-0000-4000-8000-000000000001', 'HH-TVM-0001',
+   '44444444-0001-0000-0000-000000000001',
+   '3rd Street, Adiannamalai', 'Near the temple tank', 'Ganesan Murugan',
+   '9876500001', 'aaaa0003-0000-4000-8000-000000000003',
+   'aaaa0003-0000-4000-8000-000000000003'),
+  ('99990002-0000-4000-8000-000000000002', 'HH-TVM-0002',
+   '44444444-0002-0000-0000-000000000002',
+   'Kamaraj Nagar, Vengikkal', 'Opposite the school', 'Selvi Kannan',
+   '9876500010', 'aaaa0003-0000-4000-8000-000000000003',
+   'aaaa0003-0000-4000-8000-000000000003');
+
+insert into public.patients (
+  id, household_id, app_user_id, full_name, sex, age_years,
+  contact_phone, preferred_language, is_pregnant, chronic_conditions
+) values
+  -- Older adult with hypertension: chest pain becomes a red flag.
+  ('99991001-0000-4000-8000-000000000001', '99990001-0000-4000-8000-000000000001',
+   null, 'Ganesan Murugan', 'male', 52, '9876500001', 'ta', false,
+   array['hypertension']),
+  -- The citizen who signs in on the mobile app.
+  ('99991002-0000-4000-8000-000000000002', '99990001-0000-4000-8000-000000000001',
+   'aaaa0005-0000-4000-8000-000000000005', 'Meena Ravi', 'female', 27,
+   '9876500002', 'ta', false, '{}'),
+  -- Child under five: danger signs escalate immediately.
+  ('99991003-0000-4000-8000-000000000003', '99990001-0000-4000-8000-000000000001',
+   null, 'Arun Ganesan', 'male', 3, null, 'ta', false, '{}'),
+  -- Pregnant woman: any symptom is routed to obstetric care.
+  ('99991004-0000-4000-8000-000000000004', '99990002-0000-4000-8000-000000000002',
+   null, 'Selvi Kannan', 'female', 24, '9876500010', 'ta', true, '{}'),
+  -- Person with diabetes: fever escalates.
+  ('99991005-0000-4000-8000-000000000005', '99990002-0000-4000-8000-000000000002',
+   null, 'Kannan Selvaraj', 'male', 46, '9876500011', 'ta', false,
+   array['diabetes']);

@@ -10,6 +10,7 @@
     "db:reset": "supabase db reset --local",
     "db:diff": "supabase db diff --local",
     "db:verify": "node scripts/verify-db.mjs",
+    "smoke": "node scripts/smoke-journey.mjs",
     "db:studio": "supabase status -o env"
   },
   "devDependencies": {

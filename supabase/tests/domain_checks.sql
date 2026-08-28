@@ -95,11 +95,12 @@ $$;
 -- =============================================================================
 select pg_temp.act_as(:asha_id::uuid);
 
+-- A distinct code so the suite does not collide with the seeded households.
 insert into public.households (id, code, village_id, address_line, contact_phone, head_of_household)
 values (
-  '77777777-0000-0000-0000-000000000001', 'HH-TVM-0001',
+  '77777777-0000-0000-0000-000000000001', 'HH-CHECK-0001',
   '44444444-0001-0000-0000-000000000001', '3rd Street, Adiannamalai',
-  '9876500001', 'Ganesan M'
+  '9876509001', 'Check Household Head'
 );
 
 select pg_temp.check(

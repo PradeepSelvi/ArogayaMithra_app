@@ -254,6 +254,91 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
+-- Rule lookup helpers.
+--
+-- The rule tables are readable only by health workers, because a published rule
+-- set is clinical governance material rather than citizen-facing content. But
+-- run_triage must work for a citizen too, and it stays SECURITY INVOKER so that
+-- reading the patient and writing the assessment are still checked by RLS.
+--
+-- These helpers are the narrow exception: they expose the *outcome* of matching
+-- to any caller without exposing the rule set itself.
+-- ---------------------------------------------------------------------------
+create or replace function app.active_rule_set()
+returns public.triage_rule_sets
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select rs.* from public.triage_rule_sets rs where rs.status = 'active' limit 1;
+$$;
+
+create or replace function app.match_triage_rule(
+  p_rule_set_id uuid,
+  p_symptoms text[],
+  p_age_years integer,
+  p_severity integer,
+  p_duration_hours integer,
+  p_is_pregnant boolean,
+  p_chronic text[]
+)
+returns public.triage_rules
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select r.*
+  from public.triage_rules r
+  where r.rule_set_id = p_rule_set_id
+    and app.triage_rule_matches(
+      r.match, p_symptoms, p_age_years, p_severity,
+      p_duration_hours, p_is_pregnant, p_chronic
+    )
+  -- Red flags outrank everything, then priority. First match wins.
+  order by r.is_red_flag desc, r.priority desc, r.code asc
+  limit 1;
+$$;
+
+create or replace function app.matched_red_flags(
+  p_rule_set_id uuid,
+  p_symptoms text[],
+  p_age_years integer,
+  p_severity integer,
+  p_duration_hours integer,
+  p_is_pregnant boolean,
+  p_chronic text[]
+)
+returns text[]
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(array_agg(r.code order by r.priority desc), '{}')
+  from public.triage_rules r
+  where r.rule_set_id = p_rule_set_id
+    and r.is_red_flag
+    and app.triage_rule_matches(
+      r.match, p_symptoms, p_age_years, p_severity,
+      p_duration_hours, p_is_pregnant, p_chronic
+    );
+$$;
+
+create or replace function app.unknown_symptom_codes(p_symptoms text[])
+returns text[]
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select array_agg(s)
+  from unnest(p_symptoms) as s
+  where not exists (select 1 from public.symptom_catalog c where c.code = s);
+$$;
+
+-- ---------------------------------------------------------------------------
 -- public.run_triage : PRD 13 POST /api/v1/triage
 -- ---------------------------------------------------------------------------
 create or replace function public.run_triage(
@@ -305,41 +390,27 @@ begin
 
   -- Reject unknown symptom codes rather than silently ignoring them: a dropped
   -- symptom could downgrade risk.
-  select array_agg(s) into v_unknown
-  from unnest(p_symptoms) as s
-  where not exists (select 1 from public.symptom_catalog c where c.code = s);
-
+  v_unknown := app.unknown_symptom_codes(p_symptoms);
   if v_unknown is not null then
     raise exception 'Unknown symptom codes: %', v_unknown using errcode = 'invalid_parameter_value';
   end if;
 
-  select * into v_set from public.triage_rule_sets rs where rs.status = 'active';
+  v_set := app.active_rule_set();
   if v_set.id is null then
     raise exception 'No active triage rule set is configured'
       using errcode = 'configuration_limit_exceeded';
   end if;
 
-  -- Red flags first, then priority. First match wins.
-  select * into v_rule
-  from public.triage_rules r
-  where r.rule_set_id = v_set.id
-    and app.triage_rule_matches(
-      r.match, p_symptoms, v_patient.age_years, p_severity,
-      p_duration_hours, v_patient.is_pregnant, v_patient.chronic_conditions
-    )
-  order by r.is_red_flag desc, r.priority desc, r.code asc
-  limit 1;
+  v_rule := app.match_triage_rule(
+    v_set.id, p_symptoms, v_patient.age_years, p_severity,
+    p_duration_hours, v_patient.is_pregnant, v_patient.chronic_conditions
+  );
 
-  -- Collect every red flag that fired, for the record and for the UI.
-  select coalesce(array_agg(r.code order by r.priority desc), '{}')
-  into v_red_flags
-  from public.triage_rules r
-  where r.rule_set_id = v_set.id
-    and r.is_red_flag
-    and app.triage_rule_matches(
-      r.match, p_symptoms, v_patient.age_years, p_severity,
-      p_duration_hours, v_patient.is_pregnant, v_patient.chronic_conditions
-    );
+  -- Every red flag that fired, for the record and for the UI.
+  v_red_flags := app.matched_red_flags(
+    v_set.id, p_symptoms, v_patient.age_years, p_severity,
+    p_duration_hours, v_patient.is_pregnant, v_patient.chronic_conditions
+  );
 
   insert into public.triage_assessments (
     patient_id, assessed_by, channel, input_language, symptoms, severity,

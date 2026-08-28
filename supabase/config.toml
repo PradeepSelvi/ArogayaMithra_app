@@ -254,18 +254,23 @@ otp_expiry = 3600
 # content_path = "./supabase/templates/password_changed_notification.html"
 
 [auth.sms]
-# Allow/disallow new user signups via SMS to your project.
-enable_signup = false
+# Citizens sign in with a mobile number and a one-time code (PRD FR-001).
+enable_signup = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
 # Template for sending OTP to users
-template = "Your code is {{ .Code }}"
+template = "Your ArogyaMitra code is {{ .Code }}"
 # Controls the minimum amount of time that must pass before sending another sms otp.
 max_frequency = "5s"
 
-# Use pre-defined map of phone number to OTP for testing.
-# [auth.sms.test_otp]
-# 4152127777 = "123456"
+# LOCAL DEVELOPMENT ONLY.
+# No SMS provider is configured locally, so these numbers accept a fixed code.
+# A deployed environment must configure a real provider and must not carry these
+# entries (PRD 29: identity/OTP provider is an open decision before production).
+[auth.sms.test_otp]
+919876500002 = "123456"
+919876500001 = "123456"
+919876500003 = "123456"
 
 # Configure logged in session timeouts.
 # [auth.sessions]
@@ -285,10 +290,19 @@ max_frequency = "5s"
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
 
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
+#
+# LOCAL DEVELOPMENT ONLY. Auth requires a named SMS provider before it will
+# accept a phone sign-in at all, so a placeholder is configured here. Because
+# every development number is listed in [auth.sms.test_otp] above, the provider
+# is never actually called and no message is sent.
+#
+# A deployed environment must replace this with the sender the deployment is
+# registered to use, supply the token through the environment, and remove the
+# test_otp entries (PRD 29: notification providers and sender registration).
 [auth.sms.twilio]
-enabled = false
-account_sid = ""
-message_service_sid = ""
+enabled = true
+account_sid = "local-development-placeholder"
+message_service_sid = "local-development-placeholder"
 # DO NOT commit your Twilio auth token to git. Use environment variable substitution instead:
 auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
 
