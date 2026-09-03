@@ -1,5 +1,6 @@
 import 'package:am_auth/am_auth.dart';
 import 'package:am_localization/am_localization.dart';
+import 'package:am_models/am_models.dart';
 import 'package:am_ui/am_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +24,11 @@ class DhoDashboardApp extends ConsumerWidget {
       supportedLocales: AmLocales.supported,
       localizationsDelegates: AmLocales.delegates,
       home: AuthGate(
+        allowedRoles: const {
+          UserRole.dho,
+          UserRole.stateAdmin,
+          UserRole.systemAdmin,
+        },
         resolving: (context) => Scaffold(
           body: AmLoadingView(message: AmStrings.of(context).loading),
         ),

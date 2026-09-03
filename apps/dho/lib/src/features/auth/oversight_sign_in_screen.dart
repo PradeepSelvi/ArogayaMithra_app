@@ -1,5 +1,6 @@
 import 'package:am_auth/am_auth.dart';
 import 'package:am_localization/am_localization.dart';
+import 'package:am_models/am_models.dart';
 import 'package:am_ui/am_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,6 +33,7 @@ class _OversightSignInScreenState
     final strings = AmStrings.of(context);
     final theme = Theme.of(context);
     final auth = ref.watch(authControllerProvider);
+    final currentLang = ref.watch(currentLanguageProvider);
 
     return Scaffold(
       body: Center(
@@ -47,6 +49,27 @@ class _OversightSignInScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: TextButton.icon(
+                          onPressed: () {
+                            ref
+                                .read(sessionLanguageOverrideProvider.notifier)
+                                .setLanguage(
+                                  currentLang == LanguageCode.tamil
+                                      ? LanguageCode.english
+                                      : LanguageCode.tamil,
+                                );
+                          },
+                          icon: const Icon(Icons.translate, size: 16),
+                          label: Text(
+                            currentLang == LanguageCode.tamil
+                                ? 'English'
+                                : 'தமிழ்',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
                       const Icon(
                         Icons.insights_outlined,
                         size: 48,

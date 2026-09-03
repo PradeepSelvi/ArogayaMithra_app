@@ -31,9 +31,27 @@ final currentDistrictIdProvider = Provider<String?>(
   (ref) => ref.watch(currentUserProvider)?.districtId,
 );
 
-/// Language for the session, defaulting to Tamil.
+/// Allows explicit language override before or during a session.
+class SessionLanguageNotifier extends Notifier<LanguageCode?> {
+  @override
+  LanguageCode? build() => null;
+
+  void setLanguage(LanguageCode lang) => state = lang;
+}
+
+final sessionLanguageOverrideProvider =
+    NotifierProvider<SessionLanguageNotifier, LanguageCode?>(
+  SessionLanguageNotifier.new,
+);
+
+/// Language for the session, defaulting to Tamil or user preference.
 final currentLanguageProvider = Provider<LanguageCode>(
-  (ref) => ref.watch(currentUserProvider)?.preferredLanguage ?? LanguageCode.tamil,
+  (ref) {
+    final override = ref.watch(sessionLanguageOverrideProvider);
+    if (override != null) return override;
+    return ref.watch(currentUserProvider)?.preferredLanguage ??
+        LanguageCode.tamil;
+  },
 );
 
 final isSignedInProvider = Provider<bool>(
