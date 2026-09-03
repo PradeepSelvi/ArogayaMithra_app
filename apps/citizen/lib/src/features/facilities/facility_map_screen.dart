@@ -3,7 +3,9 @@ import 'package:am_models/am_models.dart';
 import 'package:am_networking/am_networking.dart';
 import 'package:am_ui/am_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../language/locale_controller.dart';
 
@@ -20,11 +22,55 @@ class _FacilityMapScreenState extends ConsumerState<FacilityMapScreen> {
   bool _isLoading = true;
   String _selectedFilter = 'all';
   List<FacilityCandidate> _candidates = [];
+  FacilityCandidate? _highlightedFacility;
+  bool _isMapExpanded = false;
+  final MapController _mapController = MapController();
 
   @override
   void initState() {
     super.initState();
     _loadFacilities();
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildUserLocationBeacon() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: Colors.blue.withAlpha(45),
+            shape: BoxShape.circle,
+          ),
+        ),
+        Container(
+          width: 16,
+          height: 16,
+          decoration: const BoxDecoration(
+            color: Colors.blue,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(color: Color(0x40000000), blurRadius: 4),
+            ],
+          ),
+        ),
+        Container(
+          width: 6,
+          height: 6,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> _loadFacilities() async {
@@ -145,122 +191,232 @@ class _FacilityMapScreenState extends ConsumerState<FacilityMapScreen> {
               ),
             ),
 
-            // Map View / Radar Card
+            // Real Interactive OpenStreetMap View
             Container(
               margin: const EdgeInsets.all(AmTokens.spaceMd),
-              height: 140,
+              height: _isMapExpanded ? 420 : 280,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AmTokens.radiusLarge),
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.blueGrey.shade900,
-                    Colors.teal.shade900,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                border: Border.all(color: Colors.grey.shade300, width: 1.5),
                 boxShadow: const [
                   BoxShadow(
-                    color: Color(0x26000000),
-                    blurRadius: 8,
-                    offset: Offset(0, 3),
+                    color: Color(0x1F000000),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
                   ),
                 ],
               ),
+              clipBehavior: Clip.antiAlias,
               child: Stack(
                 children: [
-                  // Grid background lines
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: _MapGridPainter(),
+                  // Real OSM Tile Map
+                  FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: LatLng(
+                        _currentPosition.latitude,
+                        _currentPosition.longitude,
+                      ),
+                      initialZoom: 12.0,
+                      minZoom: 5.0,
+                      maxZoom: 18.0,
+                      onTap: (_, __) {
+                        setState(() => _highlightedFacility = null);
+                      },
                     ),
-                  ),
-                  Positioned(
-                    top: 12,
-                    left: 16,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: Colors.greenAccent,
-                                shape: BoxShape.circle,
-                              ),
+                    children: [
+                      // OpenStreetMap Tile Layer
+                      TileLayer(
+                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.arogyamitra.citizen',
+                        maxZoom: 18,
+                      ),
+
+                      // User Location Marker
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: LatLng(
+                              _currentPosition.latitude,
+                              _currentPosition.longitude,
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              isTamil ? 'நேரலை ஜிபிஎஸ் வரைபடம்' : 'LIVE HEALTH MAP RADAR',
-                              style: const TextStyle(
-                                color: Colors.greenAccent,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          isTamil
-                              ? '${_candidates.length} மருத்துவமனைகள் கண்காணிப்பில் உள்ளன'
-                              : '${_candidates.length} Facilities in district scope',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                            width: 36,
+                            height: 36,
+                            child: _buildUserLocationBeacon(),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+
+                      // Facility Markers
+                      MarkerLayer(
+                        markers: _candidates.map((c) {
+                          final isSelected = _highlightedFacility?.facility.id == c.facility.id;
+                          final color = c.facility.tier >= 4
+                              ? Colors.red.shade700
+                              : (c.facility.tier == 3
+                                  ? Colors.indigo.shade700
+                                  : (c.facility.tier == 2
+                                      ? Colors.teal.shade700
+                                      : Colors.green.shade700));
+                          final label = c.facility.tier >= 4
+                              ? (isTamil ? 'கல்லூரி' : 'MED COLLEGE')
+                              : (c.facility.tier == 3
+                                  ? (isTamil ? 'மருத்துவமனை' : 'HOSPITAL')
+                                  : (c.facility.tier == 2
+                                      ? 'CHC'
+                                      : 'PHC'));
+
+                          return Marker(
+                            point: LatLng(
+                              c.facility.location.latitude,
+                              c.facility.location.longitude,
+                            ),
+                            width: 90,
+                            height: 50,
+                            child: GestureDetector(
+                              onTap: () => setState(() => _highlightedFacility = c),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? color : Colors.white,
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: color, width: 1.5),
+                                      boxShadow: const [
+                                        BoxShadow(color: Color(0x44000000), blurRadius: 4, offset: Offset(0, 2)),
+                                      ],
+                                    ),
+                                    child: Text(
+                                      label,
+                                      style: TextStyle(
+                                        color: isSelected ? Colors.white : color,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.location_on,
+                                    color: color,
+                                    size: isSelected ? 28 : 22,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+
+                  // Map Header Overlay
+                  Positioned(
+                    top: 10,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(240),
+                        borderRadius: BorderRadius.circular(AmTokens.radiusSmall),
+                        boxShadow: const [
+                          BoxShadow(color: Color(0x1A000000), blurRadius: 4),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            isTamil ? 'நேரடி வரைபடம்' : 'Live Map',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '(${_candidates.length})',
+                            style: const TextStyle(fontSize: 10, color: Colors.black54),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  // User Center Pin
-                  Center(
+
+                  // Map Controls
+                  Positioned(
+                    top: 10,
+                    right: 12,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: Color(0x4D2196F3),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.person_pin_circle,
-                            color: Colors.cyanAccent,
-                            size: 28,
-                          ),
+                        _MapControlButton(
+                          icon: Icons.add,
+                          tooltip: 'Zoom In',
+                          onTap: () {
+                            final cam = _mapController.camera;
+                            _mapController.move(cam.center, (cam.zoom + 1).clamp(5, 18));
+                          },
                         ),
-                        Text(
-                          isTamil ? 'நீங்கள்' : 'You',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        const SizedBox(height: 4),
+                        _MapControlButton(
+                          icon: Icons.remove,
+                          tooltip: 'Zoom Out',
+                          onTap: () {
+                            final cam = _mapController.camera;
+                            _mapController.move(cam.center, (cam.zoom - 1).clamp(5, 18));
+                          },
+                        ),
+                        const SizedBox(height: 4),
+                        _MapControlButton(
+                          icon: Icons.my_location,
+                          tooltip: 'Recenter GPS',
+                          onTap: () {
+                            _mapController.move(
+                              LatLng(_currentPosition.latitude, _currentPosition.longitude),
+                              12.0,
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 4),
+                        _MapControlButton(
+                          icon: _isMapExpanded ? Icons.fullscreen_exit : Icons.fullscreen,
+                          tooltip: _isMapExpanded ? 'Collapse' : 'Expand Map',
+                          onTap: () => setState(() => _isMapExpanded = !_isMapExpanded),
                         ),
                       ],
                     ),
                   ),
-                  // Emergency Call overlay button
-                  Positioned(
-                    bottom: 10,
-                    right: 12,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.shade600,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        minimumSize: Size.zero,
+
+                  // Selected Facility Callout Card
+                  if (_highlightedFacility != null)
+                    Positioned(
+                      bottom: 8,
+                      left: 8,
+                      right: 8,
+                      child: _MapFacilityCallout(
+                        candidate: _highlightedFacility!,
+                        isTamil: isTamil,
+                        onClose: () => setState(() => _highlightedFacility = null),
+                        onNavigate: () => ref
+                            .read(directionsLauncherProvider)
+                            .openDirections(_highlightedFacility!.facility.location),
+                        onCall: () => ref
+                            .read(directionsLauncherProvider)
+                            .call(_highlightedFacility!.facility.callablePhone ?? '108'),
                       ),
-                      onPressed: () => ref.read(directionsLauncherProvider).callEmergencyServices(),
-                      icon: const Icon(Icons.emergency, size: 16),
-                      label: const Text('108 SOS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -494,6 +650,7 @@ class _FacilityMapScreenState extends ConsumerState<FacilityMapScreen> {
       ),
     );
   }
+
 }
 
 class _FilterPill extends StatelessWidget {
@@ -582,33 +739,170 @@ class _FacilityBadge extends StatelessWidget {
   }
 }
 
-class _MapGridPainter extends CustomPainter {
+
+
+class _MapFacilityCallout extends StatelessWidget {
+  const _MapFacilityCallout({
+    required this.candidate,
+    required this.isTamil,
+    required this.onClose,
+    required this.onNavigate,
+    required this.onCall,
+  });
+
+  final FacilityCandidate candidate;
+  final bool isTamil;
+  final VoidCallback onClose;
+  final VoidCallback onNavigate;
+  final VoidCallback onCall;
+
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0x0DFFFFFF)
-      ..strokeWidth = 1;
+  Widget build(BuildContext context) {
+    final facility = candidate.facility;
+    final distanceKm = (candidate.distanceMetres / 1000).toStringAsFixed(1);
+    final name = (isTamil && facility.nameLocal != null) ? facility.nameLocal! : facility.nameEn;
 
-    for (double i = 0; i < size.width; i += 20) {
-      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
-    }
-    for (double j = 0; j < size.height; j += 20) {
-      canvas.drawLine(Offset(0, j), Offset(size.width, j), paint);
-    }
-
-    // Circles representing distance radar
-    final circlePaint = Paint()
-      ..color = const Color(0x1A64FFDA)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    final center = Offset(size.width / 2, size.height / 2);
-    canvas.drawCircle(center, 30, circlePaint);
-    canvas.drawCircle(center, 60, circlePaint);
+    return Card(
+      elevation: 6,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AmTokens.radiusMedium),
+        side: const BorderSide(color: AmTokens.primary, width: 1.5),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        '$distanceKm km away • Tier ${facility.tier} ${facility.is24x7 ? "• 24x7 Open" : ""}',
+                        style: const TextStyle(fontSize: 11, color: AmTokens.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: onClose,
+                  icon: const Icon(Icons.close, size: 18),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            // Live Bed stats quick chip
+            Row(
+              children: [
+                _QuickBedChip(label: 'General', count: facility.tier >= 3 ? '64/100' : '18/30', color: Colors.teal),
+                const SizedBox(width: 6),
+                _QuickBedChip(label: 'ICU', count: facility.tier >= 3 ? '5/8' : '0/0', color: Colors.indigo),
+                const SizedBox(width: 6),
+                _QuickBedChip(label: 'Oxygen', count: facility.tier >= 3 ? '22/30' : '6/10', color: Colors.deepPurple),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      minimumSize: const Size(0, 32),
+                    ),
+                    onPressed: onNavigate,
+                    icon: const Icon(Icons.directions, size: 14),
+                    label: Text(isTamil ? 'திசைவழி' : 'Directions', style: const TextStyle(fontSize: 11)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (facility.callablePhone != null)
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      minimumSize: const Size(0, 32),
+                    ),
+                    onPressed: onCall,
+                    icon: const Icon(Icons.phone, size: 14),
+                    label: Text(isTamil ? 'அழைக்க' : 'Call', style: const TextStyle(fontSize: 11)),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
+}
+
+class _QuickBedChip extends StatelessWidget {
+  const _QuickBedChip({required this.label, required this.count, required this.color});
+
+  final String label;
+  final String count;
+  final Color color;
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withAlpha(20),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withAlpha(80)),
+      ),
+      child: Text(
+        '$label: $count',
+        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+}
+
+class _MapControlButton extends StatelessWidget {
+  const _MapControlButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withAlpha(240),
+      borderRadius: BorderRadius.circular(AmTokens.radiusSmall),
+      elevation: 2,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AmTokens.radiusSmall),
+        child: Tooltip(
+          message: tooltip,
+          child: Container(
+            width: 30,
+            height: 30,
+            alignment: Alignment.center,
+            child: Icon(icon, size: 16, color: Colors.black87),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 final List<FacilityCandidate> _demoFacilities = [

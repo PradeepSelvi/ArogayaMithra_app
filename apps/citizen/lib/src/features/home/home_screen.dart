@@ -5,6 +5,7 @@ import 'package:am_ui/am_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../chatbot/ai_chatbot_screen.dart';
 import '../emergency/ambulance_tracker_screen.dart';
 import '../facilities/facility_map_screen.dart';
 import '../family/family_manager_modal.dart';
@@ -115,6 +116,11 @@ class _HomeDashboardView extends ConsumerWidget {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: isTamil ? 'ஆரோக்கியமித்ரா AI உதவியாளர்' : 'ArogyaMitra AI Assistant',
+            icon: const Icon(Icons.auto_awesome, color: Colors.teal),
+            onPressed: () => _push(context, const AiChatbotScreen()),
+          ),
           const _LanguageToggle(),
           const _NotificationBell(),
           IconButton(
@@ -250,6 +256,122 @@ class _HomeDashboardView extends ConsumerWidget {
                       child: Text(isTamil ? '108 நேரலை' : 'Track 108'),
                     ),
                   ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AmTokens.spaceMd),
+
+            // 🤖 Mistral AI Chatbot Banner
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.teal.shade700,
+                    const Color(0xFF004D40),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(AmTokens.radiusLarge),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x2E004D40),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _push(context, const AiChatbotScreen()),
+                  borderRadius: BorderRadius.circular(AmTokens.radiusLarge),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AmTokens.spaceMd),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(40),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white38),
+                          ),
+                          child: const Icon(Icons.auto_awesome, color: Colors.white, size: 26),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    isTamil ? 'ஆரோக்கியமித்ரா AI உதவியாளர்' : 'ArogyaMitra AI Chatbot',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withAlpha(50),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      'MISTRAL AI',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                isTamil
+                                    ? 'அறிகுறிகள், மருந்துகள், மருத்துவமனை வழிகாட்டுதல்கள் • 24x7 நேரடி பதில்'
+                                    : 'Ask symptoms, medicines & health schemes in Tamil or English',
+                                style: TextStyle(
+                                  color: Colors.white.withAlpha(220),
+                                  fontSize: 11.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                isTamil ? 'கேளுங்கள்' : 'Chat',
+                                style: TextStyle(
+                                  color: Colors.teal.shade900,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Icon(Icons.arrow_forward, color: Colors.teal.shade900, size: 14),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -473,6 +595,16 @@ class _HomeDashboardView extends ConsumerWidget {
             ),
             const SizedBox(height: AmTokens.spaceXl),
           ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'ai_chatbot_fab',
+        onPressed: () => _push(context, const AiChatbotScreen()),
+        backgroundColor: Colors.teal.shade700,
+        icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+        label: Text(
+          isTamil ? 'AI மருத்துவ உதவி' : 'AI Health Assistant',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
     );
