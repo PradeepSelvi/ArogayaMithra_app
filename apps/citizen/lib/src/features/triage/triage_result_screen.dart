@@ -194,7 +194,8 @@ class _RiskHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(AmTokens.radiusLarge),
-        border: Border.all(color: tone.withValues(alpha: 0.4)),
+        // ignore: deprecated_member_use
+        border: Border.all(color: Color.fromRGBO(tone.red, tone.green, tone.blue, 0.4)),
       ),
       child: Column(
         children: [

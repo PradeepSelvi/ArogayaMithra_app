@@ -46,6 +46,7 @@ class _CitizenEntry extends ConsumerWidget {
     }
 
     return AuthGate(
+      allowedRoles: const {UserRole.citizen},
       resolving: (context) => Scaffold(
         body: AmLoadingView(message: AmStrings.of(context).loading),
       ),

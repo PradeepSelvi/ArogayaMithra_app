@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../language/locale_controller.dart';
+
 /// Mobile-number sign-in for citizens (PRD 5.1, FR-001).
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
@@ -31,9 +33,26 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     final theme = Theme.of(context);
     final auth = ref.watch(authControllerProvider);
     final isVerifying = auth.stage == AuthStage.awaitingOtp;
+    final locale = ref.watch(localeControllerProvider);
+    final isTamil = locale?.languageCode == 'ta';
 
     return Scaffold(
-      appBar: AppBar(title: Text(strings.signIn)),
+      appBar: AppBar(
+        title: Text(strings.signIn),
+        actions: [
+          TextButton.icon(
+            onPressed: () {
+              final next = isTamil ? AmLocales.english : AmLocales.tamil;
+              ref.read(localeControllerProvider.notifier).choose(next);
+            },
+            icon: const Icon(Icons.translate, size: 18),
+            label: Text(
+              isTamil ? 'English' : 'தமிழ்',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AmTokens.spaceLg),
@@ -46,6 +65,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               ),
               const SizedBox(height: AmTokens.spaceSm),
               Text(strings.signInHelp, style: theme.textTheme.bodyMedium),
+              const SizedBox(height: AmTokens.spaceSm),
+              if (!isVerifying)
+                AmBanner.info(
+                  message: 'Local Test: 9876500002 / OTP: 123456',
+                ),
               const SizedBox(height: AmTokens.spaceLg),
 
               if (auth.failure != null) ...[

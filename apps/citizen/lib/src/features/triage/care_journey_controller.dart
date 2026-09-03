@@ -5,6 +5,8 @@ import 'package:am_networking/am_networking.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meta/meta.dart';
 
+import '../../app.dart';
+
 /// The citizen's own patient record, created on first use.
 final selfPatientProvider = FutureProvider<Patient?>((ref) async {
   // Re-resolves whenever the session changes, so a different user on a shared
@@ -98,7 +100,7 @@ class CareJourneyController extends Notifier<CareJourneyState> {
 
     state = state.copyWith(isBusy: true, clearFailure: true);
 
-    final language = ref.read(currentLanguageProvider);
+    final language = ref.read(activeLanguageProvider);
     final result = await ref.read(triageRepositoryProvider).run(
           TriageRequest(
             patientId: patient.id,

@@ -1,3 +1,4 @@
+import 'package:am_models/am_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,6 +16,7 @@ class AuthGate extends ConsumerWidget {
     required this.signedOut,
     required this.signedIn,
     required this.blocked,
+    this.allowedRoles,
     super.key,
   });
 
@@ -25,6 +27,10 @@ class AuthGate extends ConsumerWidget {
   /// Receives the reason key so the screen can explain the problem.
   final Widget Function(BuildContext context, String? reasonKey) blocked;
 
+  /// Roles permitted into this application. If non-null and the signed-in user's
+  /// role is not in this set, [blocked] is shown with 'error.forbidden'.
+  final Set<UserRole>? allowedRoles;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authControllerProvider);
@@ -32,11 +38,20 @@ class AuthGate extends ConsumerWidget {
     return switch (auth.stage) {
       AuthStage.resolving => resolving(context),
       AuthStage.signedOut || AuthStage.awaitingOtp => signedOut(context),
-      AuthStage.signedIn => signedIn(context),
+      AuthStage.signedIn => _buildSignedIn(context, auth),
       AuthStage.blocked => blocked(
           context,
           auth.blockedReasonKey ?? auth.failure?.messageKey,
         ),
     };
+  }
+
+  Widget _buildSignedIn(BuildContext context, AmAuthState auth) {
+    if (allowedRoles != null && auth.profile != null) {
+      if (!allowedRoles!.contains(auth.profile!.role)) {
+        return blocked(context, 'error.forbidden');
+      }
+    }
+    return signedIn(context);
   }
 }
