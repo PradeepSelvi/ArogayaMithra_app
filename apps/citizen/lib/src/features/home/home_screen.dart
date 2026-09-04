@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../chatbot/ai_chatbot_screen.dart';
+import '../chatbot/voice_orb_screen.dart';
 import '../emergency/ambulance_tracker_screen.dart';
 import '../facilities/facility_map_screen.dart';
 import '../family/family_manager_modal.dart';
@@ -116,6 +117,11 @@ class _HomeDashboardView extends ConsumerWidget {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: isTamil ? 'குரல் வழி உதவி (Voice Orb)' : 'Voice Assistant',
+            icon: const Icon(Icons.record_voice_over, color: Colors.teal),
+            onPressed: () => _push(context, const VoiceOrbScreen()),
+          ),
           IconButton(
             tooltip: isTamil ? 'ஆரோக்கியமித்ரா AI உதவியாளர்' : 'ArogyaMitra AI Assistant',
             icon: const Icon(Icons.auto_awesome, color: Colors.teal),
@@ -346,28 +352,64 @@ class _HomeDashboardView extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                isTamil ? 'கேளுங்கள்' : 'Chat',
-                                style: TextStyle(
-                                  color: Colors.teal.shade900,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
+                        const SizedBox(width: 6),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            InkWell(
+                              onTap: () => _push(context, const VoiceOrbScreen()),
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.tealAccent.shade400,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.mic, color: Colors.black87, size: 14),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      isTamil ? 'குரல்' : 'Voice',
+                                      style: const TextStyle(
+                                        color: Colors.black87,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11.5,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(width: 2),
-                              Icon(Icons.arrow_forward, color: Colors.teal.shade900, size: 14),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 6),
+                            InkWell(
+                              onTap: () => _push(context, const AiChatbotScreen()),
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      isTamil ? 'அரட்டை' : 'Chat',
+                                      style: TextStyle(
+                                        color: Colors.teal.shade900,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11.5,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Icon(Icons.arrow_forward, color: Colors.teal.shade900, size: 13),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

@@ -144,6 +144,39 @@ class AuthController extends Notifier<AmAuthState> {
     }
   }
 
+  /// One-tap instant sign-in for the primary demo citizen (Meena Ravi, 9876500002).
+  ///
+  /// Only usable against a local build: the phone number and OTP are the
+  /// well-known local seed credentials, so this must never be reachable from
+  /// a staging or production binary even if a UI ends up calling it.
+  Future<Result<void>> signInDemoCitizen() async {
+    if (!ref.read(appEnvironmentProvider).isLocal) {
+      const failure = Failure(
+        kind: FailureKind.forbidden,
+        messageKey: 'error.forbidden',
+        detail: 'Demo sign-in is only available on local builds.',
+      );
+      state = state.copyWith(failure: failure);
+      return const Err(failure);
+    }
+
+    state = state.copyWith(clearFailure: true);
+    try {
+      await _client.auth.signInWithOtp(phone: '+919876500002');
+      await _client.auth.verifyOTP(
+        phone: '+919876500002',
+        token: '123456',
+        type: OtpType.sms,
+      );
+      await refreshProfile();
+      return const Success(null);
+    } catch (error, stackTrace) {
+      final failure = _mapper.map(error, stackTrace);
+      state = state.copyWith(failure: failure);
+      return Err(failure);
+    }
+  }
+
   /// Signs out and clears cached reference data.
   ///
   /// PRD 15 requires a logout to invalidate access and protect local data, so
