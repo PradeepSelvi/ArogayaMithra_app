@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../emergency/ambulance_tracker_screen.dart';
 import '../language/locale_controller.dart';
 import 'mistral_chatbot_service.dart';
+import 'voice_assistant_service.dart';
+import 'voice_orb_screen.dart';
 
 /// Full interactive AI Healthcare Chatbot Screen powered by Mistral AI.
 class AiChatbotScreen extends ConsumerStatefulWidget {
@@ -220,6 +222,15 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: isTamil ? 'குரல் வழி முறை (Voice Orb)' : 'Voice Mode',
+            icon: const Icon(Icons.record_voice_over, color: Colors.teal),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const VoiceOrbScreen()),
+              );
+            },
+          ),
+          IconButton(
             tooltip: isTamil ? 'அரட்டையை அழி' : 'Clear Chat',
             icon: const Icon(Icons.delete_outline, size: 22),
             onPressed: () => _confirmClearChat(isTamil),
@@ -372,6 +383,54 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
+
+                  // Microphone Speech-to-Text Button
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final voiceService = ref.watch(voiceAssistantServiceProvider);
+                      final isListening = voiceService.isListening;
+
+                      return Material(
+                        color: isListening ? Colors.redAccent : Colors.teal.shade50,
+                        shape: const CircleBorder(),
+                        child: IconButton(
+                          tooltip: isListening
+                              ? (isTamil ? 'பேசுவதை நிறுத்து' : 'Stop Listening')
+                              : (isTamil ? 'குரல் வழி பேசு' : 'Voice Input'),
+                          icon: Icon(
+                            isListening ? Icons.mic : Icons.mic_none,
+                            color: isListening ? Colors.white : Colors.teal.shade800,
+                            size: 22,
+                          ),
+                          onPressed: () {
+                            if (isListening) {
+                              voiceService.stopListening();
+                            } else {
+                              voiceService.startListening(
+                                languageCode: isTamil ? 'ta' : 'en',
+                                onResult: (text, isFinal) {
+                                  setState(() {
+                                    _textController.text = text;
+                                    _textController.selection = TextSelection.fromPosition(
+                                      TextPosition(offset: text.length),
+                                    );
+                                  });
+                                },
+                                onError: (err) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(err), duration: const Duration(seconds: 2)),
+                                  );
+                                },
+                              );
+                            }
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 6),
+
+                  // Send Button
                   Material(
                     color: _isSending ? Colors.grey : AmTokens.primary,
                     shape: const CircleBorder(),
@@ -459,7 +518,8 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
                         ),
                       ),
                       if (!isUser) ...[
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
+                        // Copy Button
                         GestureDetector(
                           onTap: () {
                             Clipboard.setData(ClipboardData(text: msg.text));
@@ -470,7 +530,34 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
                               ),
                             );
                           },
-                          child: const Icon(Icons.copy, size: 12, color: Colors.black45),
+                          child: const Icon(Icons.copy, size: 13, color: Colors.black45),
+                        ),
+                        const SizedBox(width: 8),
+                        // Speaker TTS Playback Button
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final voiceService = ref.watch(voiceAssistantServiceProvider);
+                            final isSpeakingThis = voiceService.isSpeaking &&
+                                voiceService.currentlySpeakingText == msg.text;
+
+                            return GestureDetector(
+                              onTap: () {
+                                if (isSpeakingThis) {
+                                  voiceService.stopSpeaking();
+                                } else {
+                                  voiceService.speak(
+                                    text: msg.text,
+                                    languageCode: isTamil ? 'ta' : 'en',
+                                  );
+                                }
+                              },
+                              child: Icon(
+                                isSpeakingThis ? Icons.volume_up : Icons.volume_up_outlined,
+                                size: 16,
+                                color: isSpeakingThis ? Colors.teal : Colors.black45,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ],
