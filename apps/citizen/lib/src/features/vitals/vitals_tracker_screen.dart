@@ -117,7 +117,11 @@ class VitalsTrackerScreen extends ConsumerWidget {
                   ),
                   borderRadius: BorderRadius.circular(AmTokens.radiusLarge),
                   boxShadow: const [
-                    BoxShadow(color: Color(0x33000000), blurRadius: 10, offset: Offset(0, 4)),
+                    BoxShadow(
+                      color: Color(0x33000000),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
                   ],
                 ),
                 child: Column(
@@ -126,25 +130,48 @@ class VitalsTrackerScreen extends ConsumerWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.monitor_heart, color: Colors.tealAccent, size: 22),
-                            const SizedBox(width: 8),
-                            Text(
-                              isTamil ? 'கடைசி பதிவு' : 'Latest Reading',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
-                          ],
+                        Flexible(
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.monitor_heart,
+                                color: Colors.tealAccent,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  isTamil ? 'கடைசி பதிவு' : 'Latest Reading',
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0x33FFFFFF),
-                            borderRadius: BorderRadius.circular(AmTokens.radiusSmall),
+                            borderRadius: BorderRadius.circular(
+                              AmTokens.radiusSmall,
+                            ),
                           ),
                           child: Text(
                             latest.bpStatus,
-                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
@@ -164,7 +191,9 @@ class VitalsTrackerScreen extends ConsumerWidget {
                           label: isTamil ? 'இரத்த சர்க்கரை' : 'Blood Sugar',
                           value: '${latest.bloodGlucose}',
                           unit: 'mg/dL',
-                          color: latest.bloodGlucose > 140 ? Colors.orange : Colors.tealAccent,
+                          color: latest.bloodGlucose > 140
+                              ? Colors.orange
+                              : Colors.tealAccent,
                         ),
                         Container(width: 1, height: 40, color: Colors.white24),
                         _MetricCol(
@@ -195,20 +224,44 @@ class VitalsTrackerScreen extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.info_outline, color: AmTokens.primary, size: 18),
+                        const Icon(
+                          Icons.info_outline,
+                          color: AmTokens.primary,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Text(
-                          isTamil ? 'மருத்துவ வழிகாட்டுதல் அளவுகள்' : 'Normal Reference Ranges',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          isTamil
+                              ? 'மருத்துவ வழிகாட்டுதல் அளவுகள்'
+                              : 'Normal Reference Ranges',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const _ReferenceRow(label: 'BP (Blood Pressure)', range: '< 120 / 80 mmHg (Normal)'),
-                    const _ReferenceRow(label: 'Fasting Blood Sugar', range: '70 - 100 mg/dL'),
-                    const _ReferenceRow(label: 'Post-Meal Sugar', range: '< 140 mg/dL'),
-                    const _ReferenceRow(label: 'Resting Pulse', range: '60 - 100 BPM'),
-                    const _ReferenceRow(label: 'Oxygen Saturation (SpO2)', range: '95% - 100%'),
+                    const _ReferenceRow(
+                      label: 'BP (Blood Pressure)',
+                      range: '< 120 / 80 mmHg (Normal)',
+                    ),
+                    const _ReferenceRow(
+                      label: 'Fasting Blood Sugar',
+                      range: '70 - 100 mg/dL',
+                    ),
+                    const _ReferenceRow(
+                      label: 'Post-Meal Sugar',
+                      range: '< 140 mg/dL',
+                    ),
+                    const _ReferenceRow(
+                      label: 'Resting Pulse',
+                      range: '60 - 100 BPM',
+                    ),
+                    const _ReferenceRow(
+                      label: 'Oxygen Saturation (SpO2)',
+                      range: '95% - 100%',
+                    ),
                   ],
                 ),
               ),
@@ -219,13 +272,23 @@ class VitalsTrackerScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  isTamil ? 'முந்தைய பதிவுகள்' : 'Measurement Log History',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                Flexible(
+                  child: Text(
+                    isTamil ? 'முந்தைய பதிவுகள்' : 'Measurement Log History',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Text(
                   '${vitals.length} ${isTamil ? 'பதிவுகள்' : 'entries'}',
-                  style: const TextStyle(color: AmTokens.textSecondary, fontSize: 12),
+                  style: const TextStyle(
+                    color: AmTokens.textSecondary,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -252,7 +315,9 @@ class VitalsTrackerScreen extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AmTokens.radiusLarge)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AmTokens.radiusLarge),
+        ),
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => Padding(
@@ -262,144 +327,179 @@ class VitalsTrackerScreen extends ConsumerWidget {
             top: AmTokens.spaceLg,
             bottom: MediaQuery.of(ctx).viewInsets.bottom + AmTokens.spaceLg,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    isTamil ? 'புதிய உடல் அளவீடு பதிவு' : 'Log Health Vitals',
-                    style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  IconButton(onPressed: () => Navigator.of(ctx).pop(), icon: const Icon(Icons.close)),
-                ],
-              ),
-              const SizedBox(height: AmTokens.spaceMd),
-
-              // BP Row
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: sysCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: isTamil ? 'சிஸ்டாலிக் (Sys)' : 'Systolic',
-                        suffixText: 'mmHg',
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        isTamil
+                            ? 'புதிய உடல் அளவீடு பதிவு'
+                            : 'Log Health Vitals',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: diaCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: isTamil ? 'டயஸ்டாலிக் (Dia)' : 'Diastolic',
-                        suffixText: 'mmHg',
-                      ),
+                    IconButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      icon: const Icon(Icons.close),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AmTokens.spaceSm),
-
-              // Blood Sugar Row
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: sugarCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: isTamil ? 'இரத்த சர்க்கரை' : 'Blood Glucose',
-                        suffixText: 'mg/dL',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: glucoseType,
-                      decoration: InputDecoration(
-                        labelText: isTamil ? 'வகை' : 'Timing',
-                      ),
-                      items: [
-                        DropdownMenuItem(value: 'fasting', child: Text(isTamil ? 'உணவுக்கு முன்' : 'Fasting')),
-                        DropdownMenuItem(value: 'post_meal', child: Text(isTamil ? 'உணவுக்கு பின்' : 'Post-Meal')),
-                        DropdownMenuItem(value: 'random', child: Text(isTamil ? 'சாதாரண நேரம்' : 'Random')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) setDialogState(() => glucoseType = val);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AmTokens.spaceSm),
-
-              // Heart Rate & SpO2
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: pulseCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: isTamil ? 'நாடித் துடிப்பு' : 'Pulse',
-                        suffixText: 'BPM',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: spo2Ctrl,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: isTamil ? 'ஆக்சிஜன் (SpO2)' : 'SpO2 %',
-                        suffixText: '%',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AmTokens.spaceLg),
-
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: AmTokens.primary,
-                  minimumSize: const Size(0, 46),
+                  ],
                 ),
-                onPressed: () {
-                  final sys = int.tryParse(sysCtrl.text) ?? 120;
-                  final dia = int.tryParse(diaCtrl.text) ?? 80;
-                  final sugar = int.tryParse(sugarCtrl.text) ?? 110;
-                  final pulse = int.tryParse(pulseCtrl.text) ?? 72;
-                  final spo2 = int.tryParse(spo2Ctrl.text) ?? 99;
+                const SizedBox(height: AmTokens.spaceMd),
 
-                  final newReading = VitalReading(
-                    id: 'v-${DateTime.now().millisecondsSinceEpoch}',
-                    systolic: sys,
-                    diastolic: dia,
-                    bloodGlucose: sugar,
-                    glucoseType: glucoseType,
-                    heartRate: pulse,
-                    spo2: spo2,
-                    recordedAt: DateTime.now(),
-                  );
+                // BP Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: sysCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: isTamil ? 'சிஸ்டாலிக் (Sys)' : 'Systolic',
+                          suffixText: 'mmHg',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: diaCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: isTamil ? 'டயஸ்டாலிக் (Dia)' : 'Diastolic',
+                          suffixText: 'mmHg',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AmTokens.spaceSm),
 
-                  ref.read(vitalsListProvider.notifier).update((state) => [newReading, ...state]);
-                  Navigator.of(ctx).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(isTamil ? 'அளவீடு வெற்றிகரமாக பதிவு செய்யப்பட்டது!' : 'Vitals logged successfully!')),
-                  );
-                },
-                child: Text(isTamil ? 'சேமி' : 'Save Vitals'),
-              ),
-            ],
+                // Blood Sugar Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: sugarCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: isTamil
+                              ? 'இரத்த சர்க்கரை'
+                              : 'Blood Glucose',
+                          suffixText: 'mg/dL',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: glucoseType,
+                        decoration: InputDecoration(
+                          labelText: isTamil ? 'வகை' : 'Timing',
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: 'fasting',
+                            child: Text(isTamil ? 'உணவுக்கு முன்' : 'Fasting'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'post_meal',
+                            child: Text(
+                              isTamil ? 'உணவுக்கு பின்' : 'Post-Meal',
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'random',
+                            child: Text(isTamil ? 'சாதாரண நேரம்' : 'Random'),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          if (val != null)
+                            setDialogState(() => glucoseType = val);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AmTokens.spaceSm),
+
+                // Heart Rate & SpO2
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: pulseCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: isTamil ? 'நாடித் துடிப்பு' : 'Pulse',
+                          suffixText: 'BPM',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: spo2Ctrl,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: isTamil ? 'ஆக்சிஜன் (SpO2)' : 'SpO2 %',
+                          suffixText: '%',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AmTokens.spaceLg),
+
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AmTokens.primary,
+                    minimumSize: const Size(0, 46),
+                  ),
+                  onPressed: () {
+                    final sys = int.tryParse(sysCtrl.text) ?? 120;
+                    final dia = int.tryParse(diaCtrl.text) ?? 80;
+                    final sugar = int.tryParse(sugarCtrl.text) ?? 110;
+                    final pulse = int.tryParse(pulseCtrl.text) ?? 72;
+                    final spo2 = int.tryParse(spo2Ctrl.text) ?? 99;
+
+                    final newReading = VitalReading(
+                      id: 'v-${DateTime.now().millisecondsSinceEpoch}',
+                      systolic: sys,
+                      diastolic: dia,
+                      bloodGlucose: sugar,
+                      glucoseType: glucoseType,
+                      heartRate: pulse,
+                      spo2: spo2,
+                      recordedAt: DateTime.now(),
+                    );
+
+                    ref
+                        .read(vitalsListProvider.notifier)
+                        .update((state) => [newReading, ...state]);
+                    Navigator.of(ctx).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isTamil
+                              ? 'அளவீடு வெற்றிகரமாக பதிவு செய்யப்பட்டது!'
+                              : 'Vitals logged successfully!',
+                        ),
+                      ),
+                    );
+                  },
+                  child: Text(isTamil ? 'சேமி' : 'Save Vitals'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -424,11 +524,18 @@ class _MetricCol extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white70, fontSize: 11),
+        ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: color,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         Text(unit, style: const TextStyle(color: Colors.white54, fontSize: 10)),
       ],
@@ -449,8 +556,14 @@ class _ReferenceRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: AmTokens.textSecondary)),
-          Text(range, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: AmTokens.textSecondary),
+          ),
+          Text(
+            range,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );
@@ -465,7 +578,8 @@ class _ReadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = '${reading.recordedAt.day}/${reading.recordedAt.month}/${reading.recordedAt.year} • ${reading.recordedAt.hour.toString().padLeft(2, '0')}:${reading.recordedAt.minute.toString().padLeft(2, '0')}';
+    final dateStr =
+        '${reading.recordedAt.day}/${reading.recordedAt.month}/${reading.recordedAt.year} • ${reading.recordedAt.hour.toString().padLeft(2, '0')}:${reading.recordedAt.minute.toString().padLeft(2, '0')}';
 
     return Card(
       margin: const EdgeInsets.only(bottom: AmTokens.spaceSm),
@@ -482,9 +596,18 @@ class _ReadingCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(dateStr, style: const TextStyle(color: AmTokens.textSecondary, fontSize: 11)),
+                Text(
+                  dateStr,
+                  style: const TextStyle(
+                    color: AmTokens.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: reading.bpColor.withAlpha(25),
                     borderRadius: BorderRadius.circular(4),
@@ -492,7 +615,11 @@ class _ReadingCard extends StatelessWidget {
                   ),
                   child: Text(
                     reading.bpStatus,
-                    style: TextStyle(color: reading.bpColor, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: reading.bpColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -501,8 +628,14 @@ class _ReadingCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _MiniStat(label: 'BP', value: '${reading.systolic}/${reading.diastolic} mmHg'),
-                _MiniStat(label: 'Sugar (${reading.glucoseType})', value: '${reading.bloodGlucose} mg/dL'),
+                _MiniStat(
+                  label: 'BP',
+                  value: '${reading.systolic}/${reading.diastolic} mmHg',
+                ),
+                _MiniStat(
+                  label: 'Sugar (${reading.glucoseType})',
+                  value: '${reading.bloodGlucose} mg/dL',
+                ),
                 _MiniStat(label: 'Pulse', value: '${reading.heartRate} bpm'),
                 _MiniStat(label: 'SpO2', value: '${reading.spo2}%'),
               ],
@@ -511,7 +644,11 @@ class _ReadingCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 '📝 ${reading.notes}',
-                style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AmTokens.textSecondary),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                  color: AmTokens.textSecondary,
+                ),
               ),
             ],
           ],
@@ -532,8 +669,14 @@ class _MiniStat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: AmTokens.textSecondary)),
-        Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 10, color: AmTokens.textSecondary),
+        ),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+        ),
       ],
     );
   }

@@ -69,6 +69,9 @@ class AmStringsEn extends AmStrings {
   String get languageEnglish => 'English';
 
   @override
+  String get languageHindi => 'हिन्दी';
+
+  @override
   String get signIn => 'Sign in';
 
   @override

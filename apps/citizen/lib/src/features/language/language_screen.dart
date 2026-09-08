@@ -18,7 +18,7 @@ class LanguageScreen extends ConsumerWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(AmTokens.spaceLg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -68,6 +68,14 @@ class LanguageScreen extends ConsumerWidget {
                     .read(localeControllerProvider.notifier)
                     .choose(AmLocales.english),
               ),
+              const SizedBox(height: AmTokens.spaceMd),
+              AmBigButton(
+                label: 'हिन्दी',
+                icon: Icons.translate,
+                onPressed: () => ref
+                    .read(localeControllerProvider.notifier)
+                    .choose(AmLocales.hindi),
+              ),
             ],
           ),
         ),
@@ -75,3 +83,4 @@ class LanguageScreen extends ConsumerWidget {
     );
   }
 }
+

@@ -4,12 +4,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../emergency/ambulance_tracker_screen.dart';
+import '../facilities/facility_map_screen.dart';
+import '../home_visit/home_visit_request_screen.dart';
 import '../language/locale_controller.dart';
+import '../medications/medication_manager_screen.dart';
+import '../profile/profile_screen.dart';
+import '../records/lab_vault_screen.dart';
+import '../referrals/referral_list_screen.dart';
+import '../vitals/vitals_tracker_screen.dart';
+import 'chat_history_controller.dart';
 import 'mistral_chatbot_service.dart';
 import 'voice_assistant_service.dart';
 import 'voice_orb_screen.dart';
 
-/// Full interactive AI Healthcare Chatbot Screen powered by Mistral AI.
+/// Full interactive AI Healthcare Chatbot Screen powered by Groq AI.
 class AiChatbotScreen extends ConsumerStatefulWidget {
   const AiChatbotScreen({super.key});
 
@@ -20,7 +28,6 @@ class AiChatbotScreen extends ConsumerStatefulWidget {
 class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<ChatMessage> _messages = [];
   bool _isSending = false;
 
   final List<String> _quickPromptsEn = [
@@ -41,26 +48,29 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
     'தீக்காயத்திற்கு முதலுதவி என்ன?',
   ];
 
+  final List<String> _quickPromptsHi = [
+    '2 दिनों से बुखार और सिरदर्द है',
+    'तिरुवण्णामलई में किस अस्पताल जाना चाहिए?',
+    'मेरा BP 135/88 का क्या मतलब है?',
+    'CMCHIS बीमा का दावा कैसे करें?',
+    'जन औषधि की सस्ती जेनेरिक दवाइयाँ कहाँ मिलेंगी?',
+    'जलने की चोट के लिए प्राथमिक उपचार क्या है?',
+  ];
+
   @override
   void initState() {
     super.initState();
-    // Add initial greeting message
+    // Ensure initial greeting message exists
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final isTamil = ref.read(localeControllerProvider)?.languageCode == 'ta';
-      _messages.add(
-        ChatMessage(
-          text: isTamil
-              ? 'வணக்கம்! நான் ஆரோக்கியமித்ரா AI (ArogyaMitra AI). உங்கள் உடல்நலக் கேள்விகள், அறிகுறிகள், மருந்துகள், அல்லது மருத்துவமனை வழிகாட்டுதல்கள் குறித்து என்னிடம் தமிழில் அல்லது ஆங்கிலத்தில் கேளுங்கள். நான் உங்களுக்கு உதவத் தயாராக இருக்கிறேன்! 🌿'
-              : 'Hello! I am ArogyaMitra AI, your personal healthcare assistant powered by Mistral AI. Ask me about your symptoms, lab vitals, prescriptions, or hospital guidance in Tamil or English. How can I help you today? 🌿',
-          isUser: false,
-        ),
-      );
-      setState(() {});
+      final lang = ref.read(localeControllerProvider)?.languageCode ?? 'en';
+      ref.read(chatHistoryProvider.notifier).ensureGreeting(lang);
     });
   }
 
   @override
   void dispose() {
+    ref.read(voiceAssistantServiceProvider).stopListening();
+    ref.read(voiceAssistantServiceProvider).stopSpeaking();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -82,85 +92,174 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
     final trimmed = text.trim();
     if (trimmed.isEmpty || _isSending) return;
 
-    _textController.clear();
-    final isTamil = ref.read(localeControllerProvider)?.languageCode == 'ta';
+    ref.read(voiceAssistantServiceProvider).stopListening();
+    ref.read(voiceAssistantServiceProvider).stopSpeaking();
 
-    setState(() {
-      _messages.add(ChatMessage(text: trimmed, isUser: true));
-      _isSending = true;
-    });
+    _textController.clear();
+    final lang = ref.read(localeControllerProvider)?.languageCode ?? 'en';
+
+    ref.read(chatHistoryProvider.notifier).addMessage(ChatMessage(text: trimmed, isUser: true));
+    setState(() => _isSending = true);
     _scrollToBottom();
 
     try {
       final service = ref.read(mistralChatbotServiceProvider);
-      final responseText = await service.sendMessage(
-        history: _messages,
+      final currentMessages = ref.read(chatHistoryProvider).messages;
+      final reply = await service.sendMessage(
+        history: currentMessages,
         userMessage: trimmed,
-        languageCode: isTamil ? 'ta' : 'en',
+        languageCode: lang,
       );
 
+      if (reply.tool != null) {
+        await _runTool(reply.tool!, lang);
+        setState(() => _isSending = false);
+        return;
+      }
+
+      final responseText = reply.content!;
       final isEmergency = responseText.contains('🚨') ||
           responseText.toLowerCase().contains('emergency 108') ||
-          responseText.contains('108 ஆம்புலன்ஸ்');
+          responseText.contains('108 ஆம்புலன்ஸ்') ||
+          responseText.contains('108 एम्बुलेंस');
 
-      setState(() {
-        _messages.add(
-          ChatMessage(
-            text: responseText,
-            isUser: false,
-            isEmergencyAlert: isEmergency,
-          ),
-        );
-        _isSending = false;
-      });
+      ref.read(chatHistoryProvider.notifier).addMessage(
+        ChatMessage(
+          text: responseText,
+          isUser: false,
+          isEmergencyAlert: isEmergency,
+        ),
+      );
+      setState(() => _isSending = false);
       _scrollToBottom();
     } catch (_) {
-      setState(() {
-        _messages.add(
-          ChatMessage(
-            text: isTamil
-                ? 'மன்னிக்கவும், பிழை ஏற்பட்டது. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.'
-                : 'Sorry, a connection error occurred. Please try again.',
-            isUser: false,
-          ),
-        );
-        _isSending = false;
-      });
+      ref.read(chatHistoryProvider.notifier).addMessage(
+        ChatMessage(
+          text: switch (lang) {
+            'ta' => 'மன்னிக்கவும், பிழை ஏற்பட்டது. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.',
+            'hi' => 'क्षमा करें, एक त्रुटि हुई। कृपया फिर से कोशिश करें।',
+            _ => 'Sorry, a connection error occurred. Please try again.',
+          },
+          isUser: false,
+        ),
+      );
+      setState(() => _isSending = false);
       _scrollToBottom();
     }
   }
 
-  void _confirmClearChat(bool isTamil) {
+  /// Runs a tool the assistant asked for (a navigation action) and drops a
+  /// short confirmation message into the chat instead of a generated reply.
+  Future<void> _runTool(ChatTool tool, String lang) async {
+    final (screen, confirmationEn, confirmationTa, confirmationHi) = switch (tool) {
+      ChatTool.openAmbulanceTracker => (
+          const AmbulanceTrackerScreen(),
+          'Opening the emergency ambulance tracker for you...',
+          'உங்களுக்காக அவசர ஆம்புலன்ஸ் கண்காணிப்பைத் திறக்கிறேன்...',
+          'आपके लिए आपातकालीन एम्बुलेंस ट्रैकर खोल रहा हूँ...',
+        ),
+      ChatTool.openFacilityMap => (
+          const FacilityMapScreen(),
+          'Opening the map of nearby facilities...',
+          'அருகிலுள்ள மருத்துவமனைகளின் வரைபடத்தைத் திறக்கிறேன்...',
+          'आस-पास के स्वास्थ्य केंद्रों का नक्शा खोल रहा हूँ...',
+        ),
+      ChatTool.openMedications => (
+          const MedicationManagerScreen(),
+          'Opening your medications...',
+          'உங்கள் மருந்துகளைத் திறக்கிறேன்...',
+          'आपकी दवाइयाँ खोल रहा हूँ...',
+        ),
+      ChatTool.openVitalsTracker => (
+          const VitalsTrackerScreen(),
+          'Opening your vitals tracker...',
+          'உங்கள் உடல்நல அளவீடுகளைத் திறக்கிறேன்...',
+          'आपका वाइटल्स ट्रैकर खोल रहा हूँ...',
+        ),
+      ChatTool.openLabVault => (
+          const LabVaultScreen(),
+          'Opening your lab reports...',
+          'உங்கள் ஆய்வக அறிக்கைகளைத் திறக்கிறேன்...',
+          'आपकी जांच रिपोर्ट खोल रहा हूँ...',
+        ),
+      ChatTool.openReferrals => (
+          const ReferralListScreen(),
+          'Opening your referrals...',
+          'உங்கள் பரிந்துரைகளைத் திறக்கிறேன்...',
+          'आपके रेफ़रल खोल रहा हूँ...',
+        ),
+      ChatTool.openProfile => (
+          const ProfileScreen(),
+          'Opening your profile...',
+          'உங்கள் சுயவிவரத்தைத் திறக்கிறேன்...',
+          'आपकी प्रोफ़ाइल खोल रहा हूँ...',
+        ),
+      ChatTool.openHomeVisitRequest => (
+          const HomeVisitRequestScreen(),
+          'Opening the home visit request form...',
+          'வீட்டு வருகை கோரிக்கை படிவத்தைத் திறக்கிறேன்...',
+          'घर विज़िट अनुरोध फ़ॉर्म खोल रहा हूँ...',
+        ),
+    };
+
+    ref.read(chatHistoryProvider.notifier).addMessage(
+      ChatMessage(
+        text: switch (lang) {
+          'ta' => confirmationTa,
+          'hi' => confirmationHi,
+          _ => confirmationEn,
+        },
+        isUser: false,
+      ),
+    );
+    _scrollToBottom();
+
+    if (!mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+  }
+
+  void _confirmClearChat(String lang) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isTamil ? 'அரட்டையை அழிக்கவா?' : 'Clear Chat History?'),
-        content: Text(
-          isTamil
-              ? 'அனைத்து உரையாடல் பதிவுகளும் அழிக்கப்படும்.'
-              : 'All previous messages in this session will be cleared.',
-        ),
+        title: Text(switch (lang) {
+          'ta' => 'அரட்டையை அழிக்கவா?',
+          'hi' => 'चैट हटाएं?',
+          _ => 'Clear Chat History?',
+        }),
+        content: Text(switch (lang) {
+          'ta' => 'அனைத்து உரையாடல் பதிவுகளும் அழிக்கப்படும்.',
+          'hi' => 'इस सत्र के सभी पिछले संदेश हटा दिए जाएंगे।',
+          _ => 'All previous messages in this session will be cleared.',
+        }),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(isTamil ? 'ரத்து' : 'Cancel'),
+            child: Text(switch (lang) {
+              'ta' => 'ரத்து',
+              'hi' => 'रद्द करें',
+              _ => 'Cancel',
+            }),
           ),
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
-              setState(() {
-                _messages.clear();
-                _messages.add(
-                  ChatMessage(
-                    text: isTamil
-                        ? 'புதிய உரையாடல் தொடங்கியது. எதைப் பற்றி அறிய விரும்புகிறீர்கள்?'
-                        : 'New conversation started. What would you like to know today?',
-                    isUser: false,
-                  ),
-                );
-              });
+              ref.read(chatHistoryProvider.notifier).clearHistory(
+                ChatMessage(
+                  text: switch (lang) {
+                    'ta' => 'புதிய உரையாடல் தொடங்கியது. எதைப் பற்றி அறிய விரும்புகிறீர்கள்?',
+                    'hi' => 'नई बातचीत शुरू हुई। आप आज क्या जानना चाहेंगे?',
+                    _ => 'New conversation started. What would you like to know today?',
+                  },
+                  isUser: false,
+                ),
+              );
             },
-            child: Text(isTamil ? 'அழி' : 'Clear'),
+            child: Text(switch (lang) {
+              'ta' => 'அழி',
+              'hi' => 'हटाएं',
+              _ => 'Clear',
+            }),
           ),
         ],
       ),
@@ -170,11 +269,16 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isTamil = ref.watch(localeControllerProvider)?.languageCode == 'ta';
-    final quickPrompts = isTamil ? _quickPromptsTa : _quickPromptsEn;
+    final lang = ref.watch(localeControllerProvider)?.languageCode ?? 'en';
+    final quickPrompts = switch (lang) {
+      'ta' => _quickPromptsTa,
+      'hi' => _quickPromptsHi,
+      _ => _quickPromptsEn,
+    };
 
     // Check if the latest message is an emergency alert
-    final hasActiveEmergency = _messages.isNotEmpty && _messages.last.isEmergencyAlert;
+    final chatMessages = ref.watch(chatHistoryProvider).messages;
+    final hasActiveEmergency = chatMessages.isNotEmpty && chatMessages.last.isEmergencyAlert;
 
     return Scaffold(
       appBar: AppBar(
@@ -191,38 +295,55 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
               child: const Icon(Icons.auto_awesome, color: Colors.teal, size: 20),
             ),
             const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  isTamil ? 'ஆரோக்கியமித்ரா AI' : 'ArogyaMitra AI',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                ),
-                Row(
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    switch (lang) {
+                      'ta' => 'ஆரோக்கியமித்ரா AI',
+                      'hi' => 'आरोग्यमित्र AI',
+                      _ => 'ArogyaMitra AI',
+                    },
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'Mistral AI • Online',
-                      style: TextStyle(fontSize: 11, color: AmTokens.textSecondary),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 4),
+                      const Flexible(
+                        child: Text(
+                          'Groq AI • Online',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: TextStyle(fontSize: 11, color: AmTokens.textSecondary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            tooltip: isTamil ? 'குரல் வழி முறை (Voice Orb)' : 'Voice Mode',
+            tooltip: switch (lang) {
+              'ta' => 'குரல் வழி முறை (Voice Orb)',
+              'hi' => 'ध्वनि सहायक',
+              _ => 'Voice Mode',
+            },
             icon: const Icon(Icons.record_voice_over, color: Colors.teal),
             onPressed: () {
               Navigator.of(context).push(
@@ -231,12 +352,20 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
             },
           ),
           IconButton(
-            tooltip: isTamil ? 'அரட்டையை அழி' : 'Clear Chat',
+            tooltip: switch (lang) {
+              'ta' => 'அரட்டையை அழி',
+              'hi' => 'चैट हटाएं',
+              _ => 'Clear Chat',
+            },
             icon: const Icon(Icons.delete_outline, size: 22),
-            onPressed: () => _confirmClearChat(isTamil),
+            onPressed: () => _confirmClearChat(lang),
           ),
           IconButton(
-            tooltip: isTamil ? 'அவசர உதவி 108' : 'Emergency 108',
+            tooltip: switch (lang) {
+              'ta' => 'அவசர உதவி 108',
+              'hi' => 'आपातकालीन सहायता 108',
+              _ => 'Emergency 108',
+            },
             icon: const Icon(Icons.emergency, color: Colors.red, size: 24),
             onPressed: () {
               Navigator.of(context).push(
@@ -271,7 +400,11 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            isTamil ? 'உடனடி அவசர உதவி தேவைப்படலாம்!' : 'Urgent Emergency Care Alert!',
+                            switch (lang) {
+                              'ta' => 'உடனடி அவசர உதவி தேவைப்படலாம்!',
+                              'hi' => 'तत्काल आपातकालीन सहायता की आवश्यकता हो सकती है!',
+                              _ => 'Urgent Emergency Care Alert!',
+                            },
                             style: const TextStyle(
                               color: Colors.red,
                               fontWeight: FontWeight.bold,
@@ -279,9 +412,11 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
                             ),
                           ),
                           Text(
-                            isTamil
-                                ? 'தாமதிக்காமல் உடனடியாக 108 ஆம்புலன்ஸை அழைக்கவும்.'
-                                : 'Please call 108 Emergency Ambulance or visit GMCH right away.',
+                            switch (lang) {
+                              'ta' => 'தாமதிக்காமல் உடனடியாக 108 ஆம்புலன்ஸை அழைக்கவும்.',
+                              'hi' => 'बिना देर किए तुरंत 108 एम्बुलेंस को कॉल करें।',
+                              _ => 'Please call 108 Emergency Ambulance or visit GMCH right away.',
+                            },
                             style: TextStyle(color: Colors.red.shade800, fontSize: 11),
                           ),
                         ],
@@ -338,13 +473,14 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
               child: ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(12),
-                itemCount: _messages.length + (_isSending ? 1 : 0),
+                itemCount: ref.watch(chatHistoryProvider).messages.length + (_isSending ? 1 : 0),
                 itemBuilder: (context, index) {
-                  if (index == _messages.length && _isSending) {
-                    return _buildTypingIndicator(isTamil);
+                  final messages = ref.watch(chatHistoryProvider).messages;
+                  if (index == messages.length && _isSending) {
+                    return _buildTypingIndicator(lang);
                   }
-                  final msg = _messages[index];
-                  return _buildMessageBubble(msg, theme, isTamil);
+                  final msg = messages[index];
+                  return _buildMessageBubble(msg, theme, lang);
                 },
               ),
             ),
@@ -358,94 +494,146 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
                   BoxShadow(color: Color(0x0F000000), blurRadius: 6, offset: Offset(0, -2)),
                 ],
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _textController,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: _sendMessage,
-                      minLines: 1,
-                      maxLines: 4,
-                      decoration: InputDecoration(
-                        hintText: isTamil
-                            ? 'உடல்நலம் பற்றி தமிழில் அல்லது ஆங்கிலத்தில் கேளுங்கள்...'
-                            : 'Ask any health question in Tamil or English...',
-                        hintStyle: const TextStyle(fontSize: 13, color: AmTokens.textSecondary),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        filled: true,
-                        fillColor: Colors.grey.shade100,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final voiceService = ref.watch(voiceAssistantServiceProvider);
+                  final isListening = voiceService.isListening;
 
-                  // Microphone Speech-to-Text Button
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final voiceService = ref.watch(voiceAssistantServiceProvider);
-                      final isListening = voiceService.isListening;
-
-                      return Material(
-                        color: isListening ? Colors.redAccent : Colors.teal.shade50,
-                        shape: const CircleBorder(),
-                        child: IconButton(
-                          tooltip: isListening
-                              ? (isTamil ? 'பேசுவதை நிறுத்து' : 'Stop Listening')
-                              : (isTamil ? 'குரல் வழி பேசு' : 'Voice Input'),
-                          icon: Icon(
-                            isListening ? Icons.mic : Icons.mic_none,
-                            color: isListening ? Colors.white : Colors.teal.shade800,
-                            size: 22,
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isListening)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.red.shade200),
                           ),
-                          onPressed: () {
-                            if (isListening) {
-                              voiceService.stopListening();
-                            } else {
-                              voiceService.startListening(
-                                languageCode: isTamil ? 'ta' : 'en',
-                                onResult: (text, isFinal) {
-                                  setState(() {
-                                    _textController.text = text;
-                                    _textController.selection = TextSelection.fromPosition(
-                                      TextPosition(offset: text.length),
-                                    );
-                                  });
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 10,
+                                height: 10,
+                                child: CircularProgressIndicator(color: Colors.red, strokeWidth: 2),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                switch (lang) {
+                                  'ta' => 'கேட்கிறது... மைக்ரோஃபோனில் பேசவும்',
+                                  'hi' => 'सुन रहा है... माइक्रोफ़ोन में बोलें',
+                                  _ => 'Listening... Speak clearly into your microphone',
                                 },
-                                onError: (err) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(err), duration: const Duration(seconds: 2)),
-                                  );
-                                },
-                              );
-                            }
-                          },
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.red.shade800,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 6),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _textController,
+                              textInputAction: TextInputAction.send,
+                              onSubmitted: _sendMessage,
+                              minLines: 1,
+                              maxLines: 4,
+                              decoration: InputDecoration(
+                                hintText: switch (lang) {
+                                  'ta' => 'உடல்நலம் பற்றி தமிழில் அல்லது ஆங்கிலத்தில் கேளுங்கள்...',
+                                  'hi' => 'हिन्दी या अंग्रेज़ी में कोई भी स्वास्थ्य प्रश्न पूछें...',
+                                  _ => 'Ask any health question in Tamil, Hindi or English...',
+                                },
+                                hintStyle: const TextStyle(fontSize: 13, color: AmTokens.textSecondary),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                filled: true,
+                                fillColor: Colors.grey.shade100,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
 
-                  // Send Button
-                  Material(
-                    color: _isSending ? Colors.grey : AmTokens.primary,
-                    shape: const CircleBorder(),
-                    child: IconButton(
-                      icon: _isSending
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                            )
-                          : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
-                      onPressed: _isSending ? null : () => _sendMessage(_textController.text),
-                    ),
-                  ),
-                ],
+                          // Microphone Speech-to-Text Button
+                          Material(
+                            color: isListening ? Colors.redAccent : Colors.teal.shade50,
+                            shape: const CircleBorder(),
+                            child: IconButton(
+                              tooltip: isListening
+                                  ? switch (lang) {
+                                      'ta' => 'பேசுவதை நிறுத்து',
+                                      'hi' => 'बोलना बंद करें',
+                                      _ => 'Stop Listening',
+                                    }
+                                  : switch (lang) {
+                                      'ta' => 'குரல் வழி பேசு',
+                                      'hi' => 'बोलकर टाइप करें',
+                                      _ => 'Voice Input',
+                                    },
+                              icon: Icon(
+                                isListening ? Icons.mic : Icons.mic_none,
+                                color: isListening ? Colors.white : Colors.teal.shade800,
+                                size: 22,
+                              ),
+                              onPressed: () {
+                                if (isListening) {
+                                  voiceService.stopListening();
+                                } else {
+                                  voiceService.startListening(
+                                    languageCode: lang,
+                                    onResult: (text, isFinal) {
+                                      setState(() {
+                                        _textController.text = text;
+                                        _textController.selection = TextSelection.fromPosition(
+                                          TextPosition(offset: text.length),
+                                        );
+                                      });
+                                    },
+                                    onError: (err) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(err),
+                                          duration: const Duration(seconds: 4),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    },
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+
+                          // Send Button
+                          Material(
+                            color: _isSending ? Colors.grey : AmTokens.primary,
+                            shape: const CircleBorder(),
+                            child: IconButton(
+                              icon: _isSending
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                              onPressed: _isSending ? null : () => _sendMessage(_textController.text),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -454,7 +642,7 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage msg, ThemeData theme, bool isTamil) {
+  Widget _buildMessageBubble(ChatMessage msg, ThemeData theme, String lang) {
     final isUser = msg.isUser;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -525,7 +713,11 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
                             Clipboard.setData(ClipboardData(text: msg.text));
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(isTamil ? 'பதில் நகலெடுக்கப்பட்டது' : 'Response copied to clipboard'),
+                                content: Text(switch (lang) {
+                                  'ta' => 'பதில் நகலெடுக்கப்பட்டது',
+                                  'hi' => 'उत्तर क्लिपबोर्ड पर कॉपी हो गया',
+                                  _ => 'Response copied to clipboard',
+                                }),
                                 duration: const Duration(seconds: 1),
                               ),
                             );
@@ -547,7 +739,8 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
                                 } else {
                                   voiceService.speak(
                                     text: msg.text,
-                                    languageCode: isTamil ? 'ta' : 'en',
+                                    languageCode:
+                                        VoiceAssistantService.detectLanguageOfText(msg.text),
                                   );
                                 }
                               },
@@ -584,7 +777,7 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
     );
   }
 
-  Widget _buildTypingIndicator(bool isTamil) {
+  Widget _buildTypingIndicator(String lang) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -618,7 +811,11 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  isTamil ? 'ஆரோக்கியமித்ரா AI பதிலளிக்கிறது...' : 'ArogyaMitra AI is thinking...',
+                  switch (lang) {
+                    'ta' => 'ஆரோக்கியமித்ரா AI பதிலளிக்கிறது...',
+                    'hi' => 'आरोग्यमित्र AI जवाब दे रहा है...',
+                    _ => 'ArogyaMitra AI is thinking...',
+                  },
                   style: const TextStyle(fontSize: 12, color: AmTokens.textSecondary, fontStyle: FontStyle.italic),
                 ),
               ],
@@ -630,7 +827,7 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
   }
 }
 
-/// Renders structured markdown content from Mistral AI into styled Flutter widgets.
+/// Renders structured markdown content from the AI assistant into styled Flutter widgets.
 class _MarkdownContentView extends StatelessWidget {
   const _MarkdownContentView({
     required this.text,
@@ -708,7 +905,23 @@ class _MarkdownContentView extends StatelessWidget {
         continue;
       }
 
-      // 3. Numbered lists: 1. , 2. 
+      // 3. Markdown tables: a header row, a |---|---| separator row, then
+      // data rows. Without this, the raw pipe syntax renders as literal text.
+      if (trimmed.startsWith('|') &&
+          i + 1 < lines.length &&
+          _isTableSeparatorRow(lines[i + 1])) {
+        final tableRows = <List<String>>[_splitTableRow(trimmed)];
+        var j = i + 2;
+        while (j < lines.length && lines[j].trim().startsWith('|')) {
+          tableRows.add(_splitTableRow(lines[j].trim()));
+          j++;
+        }
+        widgets.add(_buildTable(tableRows));
+        i = j - 1;
+        continue;
+      }
+
+      // 4. Numbered lists: 1. , 2.
       final numberedMatch = RegExp(r'^(\d+)\.\s+(.*)').firstMatch(trimmed);
       if (numberedMatch != null) {
         final numStr = numberedMatch.group(1)!;
@@ -742,7 +955,7 @@ class _MarkdownContentView extends StatelessWidget {
         continue;
       }
 
-      // 4. Bullet points: - , * 
+      // 5. Bullet points: - , *
       if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
         final content = trimmed.substring(2).trim();
         final isIndented = rawLine.startsWith('   ') || rawLine.startsWith('\t');
@@ -779,7 +992,7 @@ class _MarkdownContentView extends StatelessWidget {
         continue;
       }
 
-      // 5. Standard paragraph line
+      // 6. Standard paragraph line
       widgets.add(
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 2.0),
@@ -856,5 +1069,79 @@ class _MarkdownContentView extends StatelessWidget {
     }
 
     return spans;
+  }
+
+  /// Splits a markdown table row like `| a | b |` into `['a', 'b']`.
+  static List<String> _splitTableRow(String line) {
+    var t = line.trim();
+    if (t.startsWith('|')) t = t.substring(1);
+    if (t.endsWith('|')) t = t.substring(0, t.length - 1);
+    return t.split('|').map((cell) => cell.trim()).toList();
+  }
+
+  /// Whether [line] is a table's `|---|:---:|---:|` alignment/separator row.
+  static bool _isTableSeparatorRow(String line) {
+    final cells = _splitTableRow(line.trim());
+    if (cells.isEmpty) return false;
+    return cells.every((cell) => RegExp(r'^:?-+:?$').hasMatch(cell));
+  }
+
+  /// Renders a parsed markdown table (first row is the header) as an actual
+  /// table instead of leaving the raw `|`-delimited text for the citizen to
+  /// puzzle out.
+  Widget _buildTable(List<List<String>> rows) {
+    final columnCount = rows.fold<int>(0, (max, row) => row.length > max ? row.length : max);
+    if (columnCount == 0) return const SizedBox.shrink();
+
+    TableRow buildRow(List<String> cells, {required bool isHeader}) {
+      return TableRow(
+        decoration: BoxDecoration(
+          color: isHeader ? (isEmergencyAlert ? Colors.red.shade50 : Colors.teal.shade50) : null,
+        ),
+        children: List.generate(columnCount, (col) {
+          final cellText = col < cells.length ? cells[col] : '';
+          final spans = _parseInlineMarkdown(cellText, isEmergency: isEmergencyAlert);
+          return TableCell(
+            verticalAlignment: TableCellVerticalAlignment.top,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: RichText(
+                text: TextSpan(
+                  children: isHeader
+                      ? spans
+                          .map(
+                            (span) => TextSpan(
+                              text: (span as TextSpan).text,
+                              style: (span.style ?? const TextStyle()).copyWith(fontWeight: FontWeight.bold),
+                            ),
+                          )
+                          .toList()
+                      : spans,
+                ),
+              ),
+            ),
+          );
+        }),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Table(
+          border: TableBorder.all(
+            color: isEmergencyAlert ? Colors.red.shade200 : Colors.grey.shade300,
+          ),
+          columnWidths: {
+            for (var i = 0; i < columnCount; i++) i: const FlexColumnWidth(),
+          },
+          children: [
+            buildRow(rows.first, isHeader: true),
+            for (final row in rows.skip(1)) buildRow(row, isHeader: false),
+          ],
+        ),
+      ),
+    );
   }
 }

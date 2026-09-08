@@ -33,7 +33,7 @@ class VoiceAssistantService extends ChangeNotifier {
   }) {
     stopSpeaking(); // Silence any audio when user starts speaking
 
-    final lang = languageCode == 'ta' ? 'ta-IN' : 'en-IN';
+    final lang = _bcp47(languageCode);
     _isListening = true;
     _liveTranscript = '';
     notifyListeners();
@@ -77,7 +77,7 @@ class VoiceAssistantService extends ChangeNotifier {
     final cleanText = cleanMarkdownForSpeech(text);
     if (cleanText.isEmpty) return;
 
-    final lang = languageCode == 'ta' ? 'ta-IN' : 'en-IN';
+    final lang = _bcp47(languageCode);
     _isSpeaking = true;
     _currentlySpeakingText = text;
     notifyListeners();
@@ -107,31 +107,64 @@ class VoiceAssistantService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Detects whether [text] is written in Tamil or Hindi (Devanagari) script.
+  ///
+  /// Speech synthesis must match the language the text is actually written
+  /// in, not the app's UI language toggle: an assistant reply can end up in
+  /// a different language than the current toggle (e.g. it answered an
+  /// older question before the citizen switched languages), and reading
+  /// English text aloud with a Tamil or Hindi voice (or vice versa) comes
+  /// out garbled.
+  static String detectLanguageOfText(String text) {
+    if (RegExp(r'[\u{0B80}-\u{0BFF}]', unicode: true).hasMatch(text)) return 'ta';
+    if (RegExp(r'[\u{0900}-\u{097F}]', unicode: true).hasMatch(text)) return 'hi';
+    return 'en';
+  }
+
+  /// BCP-47 tag for speech recognition/synthesis engines.
+  static String _bcp47(String languageCode) => switch (languageCode) {
+        'ta' => 'ta-IN',
+        'hi' => 'hi-IN',
+        _ => 'en-IN',
+      };
+
   /// Strips markdown symbols, asterisks, hashes, list dashes, and emojis
   /// so that speech synthesis sounds natural and fluent.
   static String cleanMarkdownForSpeech(String markdown) {
     var cleaned = markdown;
 
-    // 1. Remove horizontal rules
+    // 1. Remove markdown table header separator rows like |---|---|
+    cleaned = cleaned.replaceAll(RegExp(r'\|(?:\s*:?-+:?\s*\|)+', multiLine: true), ' ');
+
+    // 2. Remove table pipes | replacing with a natural pause
+    cleaned = cleaned.replaceAll('|', ', ');
+
+    // 3. Replace <br> or <br/> tags with a sentence pause
+    cleaned = cleaned.replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '. ');
+
+    // 4. Strip any other HTML tags
+    cleaned = cleaned.replaceAll(RegExp(r'<[^>]+>'), ' ');
+
+    // 5. Remove horizontal rules
     cleaned = cleaned.replaceAll(RegExp(r'^\s*[-*_]{3,}\s*$', multiLine: true), ' ');
 
-    // 2. Remove markdown header hashes
+    // 6. Remove markdown header hashes
     cleaned = cleaned.replaceAll(RegExp(r'#+\s*'), '');
 
-    // 3. Remove bold and italic asterisks / underscores
+    // 7. Remove bold and italic asterisks / underscores
     cleaned = cleaned.replaceAll(RegExp(r'\*\*|__|\*|_'), '');
 
-    // 4. Remove list markers like "- " or "* " or "1. "
+    // 8. Remove list markers like "- " or "* " or "1. "
     cleaned = cleaned.replaceAll(RegExp(r'^\s*[-*]\s+', multiLine: true), '');
     cleaned = cleaned.replaceAll(RegExp(r'^\s*\d+\.\s+', multiLine: true), '');
 
-    // 5. Remove markdown links [text](url) -> text
+    // 9. Remove markdown links [text](url) -> text
     cleaned = cleaned.replaceAllMapped(
       RegExp(r'\[(.*?)\]\(.*?\)'),
       (match) => match.group(1) ?? '',
     );
 
-    // 6. Remove common emojis that speech synthesizers fumble over
+    // 10. Remove common emojis that speech synthesizers fumble over
     cleaned = cleaned.replaceAll(
       RegExp(
         r'[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F018}-\u{1F270}\u{2388}]',
@@ -140,7 +173,8 @@ class VoiceAssistantService extends ChangeNotifier {
       '',
     );
 
-    // 7. Normalize whitespace
+    // 11. Normalize duplicate punctuation (e.g. ", ,") and whitespace
+    cleaned = cleaned.replaceAll(RegExp(r',\s*,'), ',');
     cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
 
     return cleaned;
