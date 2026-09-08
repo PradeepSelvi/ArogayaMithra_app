@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "citizen-web",
+      "runtimeExecutable": "apps\\citizen\\run_web.cmd",
+      "runtimeArgs": [],
+      "port": 8765
+    }
+  ]
+}

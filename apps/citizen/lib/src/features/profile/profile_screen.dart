@@ -35,7 +35,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         actions: [
           IconButton(
             tooltip: strings.signOut,
-            onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+            onPressed: () =>
+                ref.read(authControllerProvider.notifier).signOut(),
             icon: const Icon(Icons.logout),
           ),
         ],
@@ -43,9 +44,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       body: SafeArea(
         child: patientAsync.when(
           loading: () => AmLoadingView(message: strings.loading),
-          error: (e, _) => Center(
-            child: Text(strings.errorUnexpected),
-          ),
+          error: (e, _) => Center(child: Text(strings.errorUnexpected)),
           data: (p) => ListView(
             padding: const EdgeInsets.all(AmTokens.spaceMd),
             children: [
@@ -68,10 +67,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            isTamil ? 'தனிநபர் விவரங்கள்' : 'Personal Details',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                          Flexible(
+                            child: Text(
+                              isTamil
+                                  ? 'தனிநபர் விவரங்கள்'
+                                  : 'Personal Details',
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                           TextButton.icon(
@@ -90,12 +95,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       _InfoRow(
                         icon: Icons.phone_outlined,
                         label: isTamil ? 'கைபேசி எண்' : 'Phone Number',
-                        value: p?.contactPhone ?? profile?.phone ?? '9876500002',
+                        value:
+                            p?.contactPhone ?? profile?.phone ?? '9876500002',
                       ),
                       _InfoRow(
                         icon: Icons.cake_outlined,
                         label: isTamil ? 'வயது / பாலினம்' : 'Age & Gender',
-                        value: '${p?.ageYears ?? 28} Yrs • ${_sexLabel(p?.sex, isTamil)}',
+                        value:
+                            '${p?.ageYears ?? 28} Yrs • ${_sexLabel(p?.sex, isTamil)}',
                       ),
                       _InfoRow(
                         icon: Icons.location_on_outlined,
@@ -121,7 +128,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isTamil ? 'மருத்துவக் குறிப்புகள் & நோய்கள்' : 'Clinical & Risk Profile',
+                        isTamil
+                            ? 'மருத்துவக் குறிப்புகள் & நோய்கள்'
+                            : 'Clinical & Risk Profile',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -138,20 +147,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const SizedBox(height: AmTokens.spaceMd),
                       if (p?.isPregnant ?? false)
                         Container(
-                          margin: const EdgeInsets.only(bottom: AmTokens.spaceSm),
+                          margin: const EdgeInsets.only(
+                            bottom: AmTokens.spaceSm,
+                          ),
                           padding: const EdgeInsets.symmetric(
                             horizontal: AmTokens.spaceSm,
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
                             color: Colors.purple.shade50,
-                            borderRadius: BorderRadius.circular(AmTokens.radiusSmall),
+                            borderRadius: BorderRadius.circular(
+                              AmTokens.radiusSmall,
+                            ),
                             border: Border.all(color: Colors.purple.shade200),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.pregnant_woman, size: 16, color: Colors.purple.shade800),
+                              Icon(
+                                Icons.pregnant_woman,
+                                size: 16,
+                                color: Colors.purple.shade800,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 isTamil ? 'கர்ப்பிணி' : 'Pregnant',
@@ -169,21 +186,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         runSpacing: 8,
                         children: (p?.chronicConditions.isNotEmpty ?? false)
                             ? p!.chronicConditions
-                                .map(
-                                  (cond) => Chip(
-                                    label: Text(_conditionName(cond, isTamil)),
-                                    backgroundColor: const Color(0x1A0F6E63),
-                                    side: const BorderSide(color: Color(0x4D0F6E63)),
-                                  ),
-                                )
-                                .toList()
+                                  .map(
+                                    (cond) => Chip(
+                                      label: Text(
+                                        _conditionName(cond, isTamil),
+                                      ),
+                                      backgroundColor: const Color(0x1A0F6E63),
+                                      side: const BorderSide(
+                                        color: Color(0x4D0F6E63),
+                                      ),
+                                    ),
+                                  )
+                                  .toList()
                             : [
                                 Chip(
                                   label: Text(
-                                    isTamil ? 'நீடித்த நோய்கள் எதுவும் இல்லை' : 'No chronic conditions reported',
+                                    isTamil
+                                        ? 'நீடித்த நோய்கள் எதுவும் இல்லை'
+                                        : 'No chronic conditions reported',
                                   ),
                                   backgroundColor: Colors.green.shade50,
-                                  side: BorderSide(color: Colors.green.shade200),
+                                  side: BorderSide(
+                                    color: Colors.green.shade200,
+                                  ),
                                 ),
                               ],
                       ),
@@ -207,29 +232,49 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Icon(Icons.contact_phone, color: Colors.red.shade800, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                isTamil ? 'அவசர கால தொடர்பு' : 'Emergency Contact',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color: Colors.red.shade900,
+                          Flexible(
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.contact_phone,
+                                  color: Colors.red.shade800,
+                                  size: 20,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    isTamil
+                                        ? 'அவசர கால தொடர்பு'
+                                        : 'Emergency Contact',
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: Colors.red.shade900,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.red.shade100,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               isTamil ? 'முதன்மை' : 'PRIMARY',
-                              style: TextStyle(color: Colors.red.shade900, fontSize: 10, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: Colors.red.shade900,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
@@ -256,11 +301,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ),
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Calling Emergency Contact: Ravi Kumar (+91 98765 00005)')),
+                              const SnackBar(
+                                content: Text(
+                                  'Calling Emergency Contact: Ravi Kumar (+91 98765 00005)',
+                                ),
+                              ),
                             );
                           },
                           icon: const Icon(Icons.call, size: 16),
-                          label: Text(isTamil ? 'அவசர தொடர்பை அழைக்க' : 'Call Emergency Contact'),
+                          label: Text(
+                            isTamil
+                                ? 'அவசர தொடர்பை அழைக்க'
+                                : 'Call Emergency Contact',
+                          ),
                         ),
                       ),
                     ],
@@ -283,11 +336,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.orange,
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
-                          Text(
-                            isTamil ? 'மருந்து ஒவ்வாமை & எச்சரிக்கைகள்' : 'Allergies & Medical Alerts',
-                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          Flexible(
+                            child: Text(
+                              isTamil
+                                  ? 'மருந்து ஒவ்வாமை & எச்சரிக்கைகள்'
+                                  : 'Allergies & Medical Alerts',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -296,16 +359,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         isTamil
                             ? 'மருத்துவர்கள் இந்த மருந்துகளை நோயாளிக்கு வழங்குவதை தவிர்க்க வேண்டும்.'
                             : 'Contraindicated drugs that must not be administered by hospitals.',
-                        style: theme.textTheme.bodySmall?.copyWith(color: AmTokens.textSecondary),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AmTokens.textSecondary,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          _AlertBadge(text: isTamil ? '⚠️ பென்சிலின் (Penicillin) - தீவிர ஒவ்வாமை' : '⚠️ Penicillin (Severe Anaphylaxis)', color: Colors.red.shade800),
-                          _AlertBadge(text: isTamil ? '⚠️ சல்ஃபா மருந்துகள் (Sulfa Drugs)' : '⚠️ Sulfa Antibiotics', color: Colors.orange.shade900),
-                          _AlertBadge(text: isTamil ? 'வேர்க்கடலை ஒவ்வாமை (Peanuts)' : 'Peanut Allergy', color: Colors.brown),
+                          _AlertBadge(
+                            text: isTamil
+                                ? '⚠️ பென்சிலின் (Penicillin) - தீவிர ஒவ்வாமை'
+                                : '⚠️ Penicillin (Severe Anaphylaxis)',
+                            color: Colors.red.shade800,
+                          ),
+                          _AlertBadge(
+                            text: isTamil
+                                ? '⚠️ சல்ஃபா மருந்துகள் (Sulfa Drugs)'
+                                : '⚠️ Sulfa Antibiotics',
+                            color: Colors.orange.shade900,
+                          ),
+                          _AlertBadge(
+                            text: isTamil
+                                ? 'வேர்க்கடலை ஒவ்வாமை (Peanuts)'
+                                : 'Peanut Allergy',
+                            color: Colors.brown,
+                          ),
                         ],
                       ),
                     ],
@@ -329,25 +409,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.shield_outlined, color: Colors.indigo, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                isTamil ? 'அரசு காப்பீட்டுத் திட்டம்' : 'Govt Health Insurance (PM-JAY)',
-                                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                            ],
+                          Flexible(
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.shield_outlined,
+                                  color: Colors.indigo,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    isTamil
+                                        ? 'அரசு காப்பீட்டுத் திட்டம்'
+                                        : 'Govt Health Insurance (PM-JAY)',
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.green.shade100,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               isTamil ? 'இயக்கத்தில் உள்ளது' : 'ACTIVE',
-                              style: TextStyle(color: Colors.green.shade900, fontSize: 10, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: Colors.green.shade900,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
@@ -355,7 +456,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const Divider(),
                       _InfoRow(
                         icon: Icons.credit_card,
-                        label: isTamil ? 'காப்பீட்டு அட்டை எண்' : 'Policy / Card Number',
+                        label: isTamil
+                            ? 'காப்பீட்டு அட்டை எண்'
+                            : 'Policy / Card Number',
                         value: 'CMCHIS-TN-3305-894102',
                       ),
                       _InfoRow(
@@ -392,8 +495,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isTamil ? 'முகவரி & பிற விவரங்கள்' : 'Residential & Registry Details',
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        isTamil
+                            ? 'முகவரி & பிற விவரங்கள்'
+                            : 'Residential & Registry Details',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const Divider(),
                       _InfoRow(
@@ -403,7 +510,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       _InfoRow(
                         icon: Icons.pin_drop_outlined,
-                        label: isTamil ? 'ஊராட்சி / வட்டம்' : 'Block & District',
+                        label: isTamil
+                            ? 'ஊராட்சி / வட்டம்'
+                            : 'Block & District',
                         value: 'Tiruvannamalai Rural Block, PIN 606604',
                       ),
                       _InfoRow(
@@ -427,31 +536,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: Column(
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.translate, color: AmTokens.primary),
+                      leading: const Icon(
+                        Icons.translate,
+                        color: AmTokens.primary,
+                      ),
                       title: Text(isTamil ? 'செயலி மொழி' : 'App Language'),
-                      subtitle: Text(isTamil ? 'தமிழ் (செயலில் உள்ளது)' : 'English (Active)'),
+                      subtitle: Text(
+                        isTamil ? 'தமிழ் (செயலில் உள்ளது)' : 'English (Active)',
+                      ),
                       trailing: FilledButton.tonal(
-                        style: FilledButton.styleFrom(minimumSize: const Size(0, 36)),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(0, 36),
+                        ),
                         onPressed: () {
-                          final next = isTamil ? AmLocales.english : AmLocales.tamil;
-                          ref.read(localeControllerProvider.notifier).choose(next);
+                          final next = isTamil
+                              ? AmLocales.english
+                              : AmLocales.tamil;
+                          ref
+                              .read(localeControllerProvider.notifier)
+                              .choose(next);
                         },
-                        child: Text(isTamil ? 'Switch to English' : 'தமிழுக்கு மாறு'),
+                        child: Text(
+                          isTamil ? 'Switch to English' : 'தமிழுக்கு மாறு',
+                        ),
                       ),
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      leading: const Icon(Icons.notifications_active_outlined, color: AmTokens.primary),
-                      title: Text(isTamil ? 'அறிவிப்புகள்' : 'Care Notifications'),
+                      leading: const Icon(
+                        Icons.notifications_active_outlined,
+                        color: AmTokens.primary,
+                      ),
+                      title: Text(
+                        isTamil ? 'அறிவிப்புகள்' : 'Care Notifications',
+                      ),
                       subtitle: Text(
                         isTamil
                             ? 'பரிந்துரை மற்றும் மருத்துவ நினைவூட்டல்கள் இயக்கம்'
                             : 'SMS and push updates for care tracking',
                       ),
-                      trailing: Switch(
-                        value: true,
-                        onChanged: (_) {},
-                      ),
+                      trailing: Switch(value: true, onChanged: (_) {}),
                     ),
                   ],
                 ),
@@ -492,13 +616,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final ageCtrl = TextEditingController(text: '${patient?.ageYears ?? 28}');
     final phoneCtrl = TextEditingController(text: patient?.contactPhone ?? '');
     Sex selectedSex = patient?.sex ?? Sex.female;
-    final chronic = Set<String>.from(patient?.chronicConditions ?? ['diabetes']);
+    final chronic = Set<String>.from(
+      patient?.chronicConditions ?? ['diabetes'],
+    );
 
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AmTokens.radiusLarge)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AmTokens.radiusLarge),
+        ),
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => Padding(
@@ -514,7 +642,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             children: [
               Text(
                 isTamil ? 'சுயவிவரத்தைத் திருத்துக' : 'Edit Profile Details',
-                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(
+                  ctx,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: AmTokens.spaceMd),
               TextField(
@@ -544,35 +674,40 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: AmTokens.spaceMd),
               Text(
-                isTamil ? 'நீடித்த நோய்கள் (Chronic Conditions)' : 'Chronic Conditions',
-                style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                isTamil
+                    ? 'நீடித்த நோய்கள் (Chronic Conditions)'
+                    : 'Chronic Conditions',
+                style: Theme.of(
+                  ctx,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: AmTokens.spaceSm),
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
-                children: [
-                  'diabetes',
-                  'hypertension',
-                  'heart_disease',
-                  'asthma',
-                  'kidney_disease',
-                ].map((c) {
-                  final has = chronic.contains(c);
-                  return FilterChip(
-                    label: Text(_conditionName(c, isTamil)),
-                    selected: has,
-                    onSelected: (val) {
-                      setDialogState(() {
-                        if (val) {
-                          chronic.add(c);
-                        } else {
-                          chronic.remove(c);
-                        }
-                      });
-                    },
-                  );
-                }).toList(),
+                children:
+                    [
+                      'diabetes',
+                      'hypertension',
+                      'heart_disease',
+                      'asthma',
+                      'kidney_disease',
+                    ].map((c) {
+                      final has = chronic.contains(c);
+                      return FilterChip(
+                        label: Text(_conditionName(c, isTamil)),
+                        selected: has,
+                        onSelected: (val) {
+                          setDialogState(() {
+                            if (val) {
+                              chronic.add(c);
+                            } else {
+                              chronic.remove(c);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
               ),
               const SizedBox(height: AmTokens.spaceLg),
               FilledButton(
@@ -584,23 +719,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         if (patient != null) {
                           final updated = Patient(
                             id: patient.id,
-                            fullName: nameCtrl.text.trim().isEmpty ? patient.fullName : nameCtrl.text.trim(),
+                            fullName: nameCtrl.text.trim().isEmpty
+                                ? patient.fullName
+                                : nameCtrl.text.trim(),
                             sex: selectedSex,
-                            ageYears: int.tryParse(ageCtrl.text) ?? patient.ageYears,
-                            contactPhone: phoneCtrl.text.trim().isEmpty ? patient.contactPhone : phoneCtrl.text.trim(),
+                            ageYears:
+                                int.tryParse(ageCtrl.text) ?? patient.ageYears,
+                            contactPhone: phoneCtrl.text.trim().isEmpty
+                                ? patient.contactPhone
+                                : phoneCtrl.text.trim(),
                             preferredLanguage: patient.preferredLanguage,
                             isPregnant: patient.isPregnant,
                             chronicConditions: chronic.toList(),
                             abhaAddress: patient.abhaAddress,
                           );
-                          await ref.read(peopleRepositoryProvider).updatePatient(updated);
+                          await ref
+                              .read(peopleRepositoryProvider)
+                              .updatePatient(updated);
                           ref.invalidate(selfPatientProvider);
                         }
                         setState(() => _isUpdating = false);
                         messenger.showSnackBar(
                           SnackBar(
                             content: Text(
-                              isTamil ? 'சுயவிவரம் வெற்றிகரமாக புதுப்பிக்கப்பட்டது' : 'Profile updated successfully!',
+                              isTamil
+                                  ? 'சுயவிவரம் வெற்றிகரமாக புதுப்பிக்கப்பட்டது'
+                                  : 'Profile updated successfully!',
                             ),
                           ),
                         );
@@ -628,15 +772,13 @@ class _HealthIdCard extends StatelessWidget {
     final name = patient?.fullName ?? user?.fullName ?? 'Meena Ravi';
     final abha = patient?.abhaAddress ?? '9876-5000-0002@abdm';
     final abhaNumber = '91-8492-3301-4491';
-    final patientId = 'PAT-TN-3305-${(patient?.id ?? '99824').substring(0, 5).toUpperCase()}';
+    final patientId =
+        'PAT-TN-3305-${(patient?.id ?? '99824').substring(0, 5).toUpperCase()}';
 
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            AmTokens.primary,
-            Colors.teal.shade900,
-          ],
+          colors: [AmTokens.primary, Colors.teal.shade900],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -655,30 +797,46 @@ class _HealthIdCard extends StatelessWidget {
         children: [
           // Header Row
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.health_and_safety, color: Colors.white, size: 28),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'ArogyaMitra Health Pass',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.health_and_safety,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ArogyaMitra Health Pass',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Text(
+                            'Ayushman Bharat Digital Mission (ABDM)',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
                       ),
-                      const Text(
-                        'Ayushman Bharat Digital Mission (ABDM)',
-                        style: TextStyle(color: Colors.white70, fontSize: 10),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -745,14 +903,25 @@ class _HealthIdCard extends StatelessWidget {
               ),
               // Interactive QR Code Thumbnail
               GestureDetector(
-                onTap: () => _openHospitalScanModal(context, name, abha, abhaNumber, patientId, patient),
+                onTap: () => _openHospitalScanModal(
+                  context,
+                  name,
+                  abha,
+                  abhaNumber,
+                  patientId,
+                  patient,
+                ),
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(AmTokens.radiusMedium),
                     boxShadow: const [
-                      BoxShadow(color: Color(0x33000000), blurRadius: 6, offset: Offset(0, 2)),
+                      BoxShadow(
+                        color: Color(0x33000000),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
                     ],
                   ),
                   child: Column(
@@ -784,7 +953,12 @@ class _HealthIdCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _PassChip(label: 'AGE', value: '${patient?.ageYears ?? 28} YRS'),
-              _PassChip(label: 'GENDER', value: patient?.sex != null ? patient!.sex.name.toUpperCase() : 'FEMALE'),
+              _PassChip(
+                label: 'GENDER',
+                value: patient?.sex != null
+                    ? patient!.sex.name.toUpperCase()
+                    : 'FEMALE',
+              ),
               _PassChip(label: 'BLOOD', value: 'O+ POSITIVE'),
               _PassChip(label: 'DISTRICT', value: 'TVM-33'),
             ],
@@ -793,7 +967,14 @@ class _HealthIdCard extends StatelessWidget {
 
           // Scannable 1D Barcode Strip
           GestureDetector(
-            onTap: () => _openHospitalScanModal(context, name, abha, abhaNumber, patientId, patient),
+            onTap: () => _openHospitalScanModal(
+              context,
+              name,
+              abha,
+              abhaNumber,
+              patientId,
+              patient,
+            ),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
@@ -812,7 +993,11 @@ class _HealthIdCard extends StatelessWidget {
                     children: [
                       const Text(
                         'HOSPITAL OPD SCANNER BARCODE',
-                        style: TextStyle(color: Colors.black54, fontSize: 8, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.black54,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         '*$patientId*',
@@ -835,7 +1020,14 @@ class _HealthIdCard extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: InkWell(
-              onTap: () => _openHospitalScanModal(context, name, abha, abhaNumber, patientId, patient),
+              onTap: () => _openHospitalScanModal(
+                context,
+                name,
+                abha,
+                abhaNumber,
+                patientId,
+                patient,
+              ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -843,7 +1035,11 @@ class _HealthIdCard extends StatelessWidget {
                   SizedBox(width: 4),
                   Text(
                     'Enlarge for OPD Barcode Scanner',
-                    style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -867,112 +1063,134 @@ class _HealthIdCard extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AmTokens.radiusLarge)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AmTokens.radiusLarge),
+        ),
       ),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(AmTokens.spaceLg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.qr_code_scanner,
+                        color: AmTokens.primary,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Hospital OPD Scan Pass',
+                        style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const Text(
+                'Show this screen to the reception / OPD counter scanner to automatically resource your patient record and triage queue.',
+                style: TextStyle(fontSize: 12, color: AmTokens.textSecondary),
+              ),
+              const SizedBox(height: 20),
+
+              // High-contrast large 2D QR Code
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Colors.grey.shade300, width: 2),
+                    borderRadius: BorderRadius.circular(AmTokens.radiusLarge),
+                  ),
+                  child: const CustomPaint(
+                    size: Size(160, 160),
+                    painter: _QrCodePainter(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // High-contrast 1D Barcode
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(AmTokens.radiusMedium),
+                ),
+                child: Column(
                   children: [
-                    const Icon(Icons.qr_code_scanner, color: AmTokens.primary, size: 24),
-                    const SizedBox(width: 8),
+                    const CustomPaint(
+                      size: Size(double.infinity, 48),
+                      painter: _BarcodePainter(),
+                    ),
+                    const SizedBox(height: 4),
                     Text(
-                      'Hospital OPD Scan Pass',
-                      style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      '*$patientId*',
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
+                      ),
                     ),
                   ],
                 ),
-                IconButton(onPressed: () => Navigator.of(ctx).pop(), icon: const Icon(Icons.close)),
-              ],
-            ),
-            const Text(
-              'Show this screen to the reception / OPD counter scanner to automatically resource your patient record and triage queue.',
-              style: TextStyle(fontSize: 12, color: AmTokens.textSecondary),
-            ),
-            const SizedBox(height: 20),
+              ),
+              const SizedBox(height: 16),
 
-            // High-contrast large 2D QR Code
-            Center(
-              child: Container(
-                padding: const EdgeInsets.all(16),
+              // Verified Demographics Card
+              Container(
+                padding: const EdgeInsets.all(AmTokens.spaceMd),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.grey.shade300, width: 2),
-                  borderRadius: BorderRadius.circular(AmTokens.radiusLarge),
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(AmTokens.radiusMedium),
                 ),
-                child: const CustomPaint(
-                  size: Size(160, 160),
-                  painter: _QrCodePainter(),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // High-contrast 1D Barcode
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(AmTokens.radiusMedium),
-              ),
-              child: Column(
-                children: [
-                  const CustomPaint(
-                    size: Size(double.infinity, 48),
-                    painter: _BarcodePainter(),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '*$patientId*',
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
+                child: Column(
+                  children: [
+                    _ModalRow(label: 'Citizen Name', value: name),
+                    _ModalRow(label: 'ABHA Address', value: abha),
+                    _ModalRow(label: 'ABHA Number', value: abhaNumber),
+                    _ModalRow(
+                      label: 'Blood Group',
+                      value: 'O+ Positive (Universal Donor)',
                     ),
-                  ),
-                ],
+                    _ModalRow(
+                      label: 'Emergency Phone',
+                      value: '+91 98765 00005 (Spouse)',
+                    ),
+                    _ModalRow(
+                      label: 'Insurance ID',
+                      value: 'CMCHIS-TN-3305-894102',
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-            // Verified Demographics Card
-            Container(
-              padding: const EdgeInsets.all(AmTokens.spaceMd),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(AmTokens.radiusMedium),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AmTokens.primary,
+                  minimumSize: const Size(0, 46),
+                ),
+                onPressed: () => Navigator.of(ctx).pop(),
+                icon: const Icon(Icons.check),
+                label: const Text('Done / Close Pass'),
               ),
-              child: Column(
-                children: [
-                  _ModalRow(label: 'Citizen Name', value: name),
-                  _ModalRow(label: 'ABHA Address', value: abha),
-                  _ModalRow(label: 'ABHA Number', value: abhaNumber),
-                  _ModalRow(label: 'Blood Group', value: 'O+ Positive (Universal Donor)'),
-                  _ModalRow(label: 'Emergency Phone', value: '+91 98765 00005 (Spouse)'),
-                  _ModalRow(label: 'Insurance ID', value: 'CMCHIS-TN-3305-894102'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: AmTokens.primary,
-                minimumSize: const Size(0, 46),
-              ),
-              onPressed: () => Navigator.of(ctx).pop(),
-              icon: const Icon(Icons.check),
-              label: const Text('Done / Close Pass'),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -992,8 +1210,14 @@ class _ModalRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: AmTokens.textSecondary)),
-          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: AmTokens.textSecondary),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );
@@ -1085,7 +1309,11 @@ class _AlertBadge extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -1106,11 +1334,35 @@ class _QrCodePainter extends CustomPainter {
     // 1. Position detection patterns (Corner squares)
     void drawPositionSquare(double x, double y) {
       // Outer 7x7
-      canvas.drawRect(Rect.fromLTWH(x * pixelSize, y * pixelSize, 7 * pixelSize, 7 * pixelSize), paint);
+      canvas.drawRect(
+        Rect.fromLTWH(
+          x * pixelSize,
+          y * pixelSize,
+          7 * pixelSize,
+          7 * pixelSize,
+        ),
+        paint,
+      );
       // Inner 5x5 white
-      canvas.drawRect(Rect.fromLTWH((x + 1) * pixelSize, (y + 1) * pixelSize, 5 * pixelSize, 5 * pixelSize), bgPaint);
+      canvas.drawRect(
+        Rect.fromLTWH(
+          (x + 1) * pixelSize,
+          (y + 1) * pixelSize,
+          5 * pixelSize,
+          5 * pixelSize,
+        ),
+        bgPaint,
+      );
       // Center 3x3 black
-      canvas.drawRect(Rect.fromLTWH((x + 2) * pixelSize, (y + 2) * pixelSize, 3 * pixelSize, 3 * pixelSize), paint);
+      canvas.drawRect(
+        Rect.fromLTWH(
+          (x + 2) * pixelSize,
+          (y + 2) * pixelSize,
+          3 * pixelSize,
+          3 * pixelSize,
+        ),
+        paint,
+      );
     }
 
     drawPositionSquare(0, 0); // Top-left
@@ -1119,32 +1371,98 @@ class _QrCodePainter extends CustomPainter {
 
     // 2. Timing patterns
     for (int i = 8; i < 13; i += 2) {
-      canvas.drawRect(Rect.fromLTWH(i * pixelSize, 6 * pixelSize, pixelSize, pixelSize), paint);
-      canvas.drawRect(Rect.fromLTWH(6 * pixelSize, i * pixelSize, pixelSize, pixelSize), paint);
+      canvas.drawRect(
+        Rect.fromLTWH(i * pixelSize, 6 * pixelSize, pixelSize, pixelSize),
+        paint,
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(6 * pixelSize, i * pixelSize, pixelSize, pixelSize),
+        paint,
+      );
     }
 
     // 3. Encoded data matrix bits
     const dataBits = [
-      [8, 2], [9, 2], [11, 2], [12, 2],
-      [8, 3], [10, 3], [12, 3],
-      [7, 8], [9, 8], [11, 8], [13, 8], [15, 8], [17, 8], [19, 8],
-      [8, 9], [10, 9], [12, 9], [14, 9], [16, 9], [18, 9],
-      [7, 10], [9, 10], [13, 10], [15, 10], [18, 10],
-      [8, 11], [11, 11], [14, 11], [17, 11],
-      [9, 12], [10, 12], [13, 12], [16, 12], [19, 12],
-      [7, 13], [11, 13], [14, 13], [18, 13],
-      [8, 14], [10, 14], [12, 14], [15, 14], [17, 14], [19, 14],
-      [9, 15], [11, 15], [13, 15], [16, 15],
-      [8, 16], [12, 16], [14, 16], [18, 16], [20, 16],
-      [9, 17], [10, 17], [13, 17], [15, 17], [17, 17],
-      [8, 18], [11, 18], [14, 18], [19, 18],
-      [9, 19], [12, 19], [16, 19], [18, 19],
-      [10, 20], [13, 20], [15, 20], [17, 20],
+      [8, 2],
+      [9, 2],
+      [11, 2],
+      [12, 2],
+      [8, 3],
+      [10, 3],
+      [12, 3],
+      [7, 8],
+      [9, 8],
+      [11, 8],
+      [13, 8],
+      [15, 8],
+      [17, 8],
+      [19, 8],
+      [8, 9],
+      [10, 9],
+      [12, 9],
+      [14, 9],
+      [16, 9],
+      [18, 9],
+      [7, 10],
+      [9, 10],
+      [13, 10],
+      [15, 10],
+      [18, 10],
+      [8, 11],
+      [11, 11],
+      [14, 11],
+      [17, 11],
+      [9, 12],
+      [10, 12],
+      [13, 12],
+      [16, 12],
+      [19, 12],
+      [7, 13],
+      [11, 13],
+      [14, 13],
+      [18, 13],
+      [8, 14],
+      [10, 14],
+      [12, 14],
+      [15, 14],
+      [17, 14],
+      [19, 14],
+      [9, 15],
+      [11, 15],
+      [13, 15],
+      [16, 15],
+      [8, 16],
+      [12, 16],
+      [14, 16],
+      [18, 16],
+      [20, 16],
+      [9, 17],
+      [10, 17],
+      [13, 17],
+      [15, 17],
+      [17, 17],
+      [8, 18],
+      [11, 18],
+      [14, 18],
+      [19, 18],
+      [9, 19],
+      [12, 19],
+      [16, 19],
+      [18, 19],
+      [10, 20],
+      [13, 20],
+      [15, 20],
+      [17, 20],
     ];
 
     for (final bit in dataBits) {
       canvas.drawRect(
-        Rect.fromLTWH(bit[0] * pixelSize, bit[1] * pixelSize, pixelSize, pixelSize),
+        Rect.fromLTWH(
+          bit[0] * pixelSize,
+          bit[1] * pixelSize,
+          pixelSize,
+          pixelSize,
+        ),
         paint,
       );
     }
@@ -1165,10 +1483,86 @@ class _BarcodePainter extends CustomPainter {
 
     final paint = Paint()..color = Colors.black;
     const pattern = [
-      2, 1, 1, 2, 3, 1, 1, 3, 2, 1, 2, 3, 1, 1, 2, 2, 1, 3, 1, 2,
-      3, 1, 1, 2, 2, 1, 3, 1, 1, 2, 2, 3, 1, 1, 2, 1, 3, 2, 1, 1,
-      2, 2, 1, 1, 3, 2, 1, 3, 1, 1, 2, 1, 2, 3, 1, 2, 1, 1, 3, 2,
-      1, 2, 2, 1, 3, 1, 2, 1, 1, 3, 2, 1, 1, 2, 3, 1, 2, 2, 1, 2,
+      2,
+      1,
+      1,
+      2,
+      3,
+      1,
+      1,
+      3,
+      2,
+      1,
+      2,
+      3,
+      1,
+      1,
+      2,
+      2,
+      1,
+      3,
+      1,
+      2,
+      3,
+      1,
+      1,
+      2,
+      2,
+      1,
+      3,
+      1,
+      1,
+      2,
+      2,
+      3,
+      1,
+      1,
+      2,
+      1,
+      3,
+      2,
+      1,
+      1,
+      2,
+      2,
+      1,
+      1,
+      3,
+      2,
+      1,
+      3,
+      1,
+      1,
+      2,
+      1,
+      2,
+      3,
+      1,
+      2,
+      1,
+      1,
+      3,
+      2,
+      1,
+      2,
+      2,
+      1,
+      3,
+      1,
+      2,
+      1,
+      1,
+      3,
+      2,
+      1,
+      1,
+      2,
+      3,
+      1,
+      2,
+      2,
+      1,
+      2,
     ];
 
     double currentX = 6.0;

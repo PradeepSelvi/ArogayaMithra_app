@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'am_strings_en.dart';
+import 'am_strings_hi.dart';
 import 'am_strings_ta.dart';
 
 // ignore_for_file: type=lint
@@ -94,6 +95,7 @@ abstract class AmStrings {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
+    Locale('hi'),
     Locale('ta'),
   ];
 
@@ -216,6 +218,12 @@ abstract class AmStrings {
   /// In en, this message translates to:
   /// **'English'**
   String get languageEnglish;
+
+  /// No description provided for @languageHindi.
+  ///
+  /// In en, this message translates to:
+  /// **'हिन्दी'**
+  String get languageHindi;
 
   /// No description provided for @signIn.
   ///
@@ -1889,7 +1897,7 @@ class _AmStringsDelegate extends LocalizationsDelegate<AmStrings> {
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en', 'ta'].contains(locale.languageCode);
+      <String>['en', 'hi', 'ta'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AmStringsDelegate old) => false;
@@ -1900,6 +1908,8 @@ AmStrings lookupAmStrings(Locale locale) {
   switch (locale.languageCode) {
     case 'en':
       return AmStringsEn();
+    case 'hi':
+      return AmStringsHi();
     case 'ta':
       return AmStringsTa();
   }

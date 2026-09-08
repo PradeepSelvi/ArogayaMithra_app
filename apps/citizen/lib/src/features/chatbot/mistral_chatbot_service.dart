@@ -1,6 +1,7 @@
-import 'dart:convert';
+import 'package:am_networking/am_networking.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Data model representing a single chat message in the conversation.
 class ChatMessage {
@@ -15,111 +16,124 @@ class ChatMessage {
   final bool isUser;
   final DateTime timestamp;
   final bool isEmergencyAlert;
+
+  Map<String, dynamic> toJson() => {
+        'text': text,
+        'isUser': isUser,
+        'timestamp': timestamp.toIso8601String(),
+        'isEmergencyAlert': isEmergencyAlert,
+      };
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
+        text: json['text'] as String? ?? '',
+        isUser: json['isUser'] as bool? ?? false,
+        timestamp: json['timestamp'] != null
+            ? DateTime.tryParse(json['timestamp'] as String) ?? DateTime.now()
+            : DateTime.now(),
+        isEmergencyAlert: json['isEmergencyAlert'] as bool? ?? false,
+      );
 }
 
-/// Mistral AI Chatbot Service for ArogyaMitra Citizen Application.
+/// A tool the assistant can ask the app to run instead of replying in text,
+/// e.g. navigating to a specific in-app screen.
+enum ChatTool {
+  openAmbulanceTracker,
+  openFacilityMap,
+  openMedications,
+  openVitalsTracker,
+  openLabVault,
+  openReferrals,
+  openProfile,
+  openHomeVisitRequest;
+
+  static ChatTool? fromWire(String? wire) => switch (wire) {
+        'open_ambulance_tracker' => ChatTool.openAmbulanceTracker,
+        'open_facility_map' => ChatTool.openFacilityMap,
+        'open_medications' => ChatTool.openMedications,
+        'open_vitals_tracker' => ChatTool.openVitalsTracker,
+        'open_lab_vault' => ChatTool.openLabVault,
+        'open_referrals' => ChatTool.openReferrals,
+        'open_profile' => ChatTool.openProfile,
+        'open_home_visit_request' => ChatTool.openHomeVisitRequest,
+        _ => null,
+      };
+}
+
+/// The assistant's reply: either text to show, or a tool the app should run.
+class ChatReply {
+  const ChatReply.text(this.content) : tool = null;
+  const ChatReply.tool(this.tool) : content = null;
+
+  final String? content;
+  final ChatTool? tool;
+}
+
+/// Healthcare chatbot service for ArogyaMitra Citizen, backed by the
+/// `chat-completion` Supabase Edge Function.
+///
+/// The Mistral API key must never live in client code: an earlier version of
+/// this file called Mistral directly with the key hardcoded here, and once
+/// that key was committed to a public repository it was scraped and abused
+/// within days, exhausting its quota for every citizen using the app. The
+/// key now lives only as a server-side secret on the Edge Function, and this
+/// service just calls that function over the citizen's authenticated
+/// Supabase session.
 class MistralChatbotService {
-  static const String _apiKey = 'rFT3tZ4BM73vqfP63fTWrKxFAjvnEt3O';
-  static const String _apiUrl = 'https://api.mistral.ai/v1/chat/completions';
-  static const String _model = 'mistral-small-latest';
+  MistralChatbotService(this._client);
 
-  static const String _systemPromptEn = '''
-You are ArogyaMitra AI (ஆரோக்கியமித்ரா AI), an empathetic, medically verified clinical health assistant for citizens in India, especially rural and district communities (such as Tiruvannamalai, Tamil Nadu).
+  final SupabaseClient _client;
 
-YOUR ROLES & CAPABILITIES:
-1. Medical Triage & Guidance: Assess patient symptoms (fever, cough, rash, stomach ache, headache, joint pain) and guide citizens to the appropriate healthcare tier:
-   - Level 1: Home Care & ASHA Worker guidance
-   - Level 2: Primary Health Centre (PHC) for non-emergency general medicine
-   - Level 3: Community Health Centre (CHC) for maternal, pediatric, minor surgical care
-   - Level 4: District Hospital (DHH) & Government Medical College Hospital (GMCH) for trauma, emergency, ICU, and super-specialty
-2. Medication & Prescription Explanation: Explain standard drug usages, dosages precautions, and generic alternatives (Pradhan Mantri Jan Aushadhi).
-3. Vitals Analysis: Explain readings like BP (120/80), Blood Sugar fasting/post-prandial, SpO2 (95%+), Pulse rate.
-4. Government Schemes: Guide on Ayushman Bharat (AB-PMJAY), CMCHIS (Chief Minister Comprehensive Health Insurance Scheme Tamil Nadu), and ABHA Health ID.
-5. First Aid: Clear, step-by-step first-aid steps for bites, burns, sprains, heat stroke.
-
-CRITICAL EMERGENCY PROTOCOL:
-If user describes red-flag emergency symptoms (severe chest pain radiating to arm, acute breathing distress, sudden paralysis/facial droop, profuse bleeding, head trauma, poisoning, severe allergic reaction):
-- Begin your response with: "🚨 [EMERGENCY 108 REQUIRED]"
-- Urge calling 108 immediately or visiting the nearest GMCH / District Hospital Casualty.
-
-Tone: Warm, respectful, simple language without unnecessary medical jargon. If the user writes in Tamil, reply in Tamil (தமிழ்). If they write in English, reply in English. Always mention that AI does not replace a physical doctor's diagnosis.
-''';
-
-  final http.Client _client;
-
-  MistralChatbotService({http.Client? client}) : _client = client ?? http.Client();
-
-  /// Sends the conversation history plus new user message to Mistral AI and returns assistant reply.
-  Future<String> sendMessage({
+  /// Sends the conversation history plus new user message and returns the
+  /// assistant's reply, which may be a tool call instead of text.
+  Future<ChatReply> sendMessage({
     required List<ChatMessage> history,
     required String userMessage,
     String languageCode = 'en',
   }) async {
     try {
-      final messages = <Map<String, String>>[
-        {'role': 'system', 'content': _systemPromptEn},
-      ];
-
-      // Append up to last 8 messages for context window management
-      final recentHistory = history.length > 8 ? history.sublist(history.length - 8) : history;
-      for (final msg in recentHistory) {
-        messages.add({
-          'role': msg.isUser ? 'user' : 'assistant',
-          'content': msg.text,
-        });
-      }
-
-      // Append current message
-      messages.add({'role': 'user', 'content': userMessage});
-
-      final response = await _client.post(
-        Uri.parse(_apiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_apiKey',
+      final response = await _client.functions.invoke(
+        'chat-completion',
+        body: {
+          'history': history
+              .map((msg) => {'text': msg.text, 'isUser': msg.isUser})
+              .toList(),
+          'userMessage': userMessage,
+          'languageCode': languageCode,
         },
-        body: jsonEncode({
-          'model': _model,
-          'messages': messages,
-          'temperature': 0.5,
-          'max_tokens': 600,
-        }),
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-        final choices = data['choices'] as List<dynamic>?;
-        if (choices != null && choices.isNotEmpty) {
-          final firstChoice = choices[0] as Map<String, dynamic>;
-          final messageObj = firstChoice['message'] as Map<String, dynamic>?;
-          final content = messageObj?['content'] as String?;
-          if (content != null && content.trim().isNotEmpty) {
-            return content.trim();
-          }
+      final data = response.data;
+      if (data is Map) {
+        final tool = ChatTool.fromWire(data['toolCall'] as String?);
+        if (tool != null) return ChatReply.tool(tool);
+
+        final content = (data['content'] as String?)?.trim();
+        if (content != null && content.isNotEmpty) {
+          return ChatReply.text(content);
         }
-        return languageCode == 'ta'
-            ? 'மன்னிக்கவும், பதிலை உருவாக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
-            : 'Sorry, I could not generate a response. Please try again.';
-      } else {
-        return languageCode == 'ta'
-            ? 'சேவை தற்காலிகமாக கிடைக்கவில்லை (${response.statusCode}). தயவுசெய்து சிறிது நேரம் கழித்து முயற்சிக்கவும்.'
-            : 'Service temporarily unavailable (${response.statusCode}). Please try again shortly.';
       }
-    } catch (e) {
-      return languageCode == 'ta'
-          ? 'இணைப்பில் பிழை ஏற்பட்டது. உங்கள் இணைய இணைப்பை சரிபார்க்கவும்.'
-          : 'Network error occurred. Please check your internet connection and try again.';
+
+      return ChatReply.text(_couldNotGenerate(languageCode));
+    } catch (e, st) {
+      debugPrint('MistralChatbotService.sendMessage error: $e\n$st');
+      return ChatReply.text(_serviceUnavailable(languageCode));
     }
   }
 
-  void dispose() {
-    _client.close();
-  }
+  static String _couldNotGenerate(String languageCode) => switch (languageCode) {
+        'ta' => 'மன்னிக்கவும், பதிலை உருவாக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.',
+        'hi' => 'क्षमा करें, उत्तर तैयार नहीं हो सका। कृपया फिर से कोशिश करें।',
+        _ => 'Sorry, I could not generate a response. Please try again.',
+      };
+
+  static String _serviceUnavailable(String languageCode) => switch (languageCode) {
+        'ta' => 'சேவை தற்காலிகமாக கிடைக்கவில்லை. தயவுசெய்து சிறிது நேரம் கழித்து முயற்சிக்கவும்.',
+        'hi' => 'सेवा अभी अस्थायी रूप से उपलब्ध नहीं है। कृपया थोड़ी देर बाद फिर से कोशिश करें।',
+        _ => 'Service temporarily unavailable. Please try again shortly.',
+      };
 }
 
 /// Provider for MistralChatbotService
 final mistralChatbotServiceProvider = Provider<MistralChatbotService>((ref) {
-  final service = MistralChatbotService();
-  ref.onDispose(service.dispose);
-  return service;
+  return MistralChatbotService(ref.watch(supabaseClientProvider));
 });

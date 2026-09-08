@@ -10,6 +10,7 @@ import '../chatbot/voice_orb_screen.dart';
 import '../emergency/ambulance_tracker_screen.dart';
 import '../facilities/facility_map_screen.dart';
 import '../family/family_manager_modal.dart';
+import '../home_visit/home_visit_request_screen.dart';
 import '../language/locale_controller.dart';
 import '../medications/medication_manager_screen.dart';
 import '../notifications/notification_screen.dart';
@@ -99,6 +100,7 @@ class _HomeDashboardView extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: 12,
         title: Row(
           children: [
             Container(
@@ -110,23 +112,21 @@ class _HomeDashboardView extends ConsumerWidget {
               child: const Icon(Icons.health_and_safety, color: AmTokens.primary, size: 24),
             ),
             const SizedBox(width: 8),
-            Text(
-              strings.appName,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            Flexible(
+              child: Text(
+                strings.appName,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
+        // The AI assistant already has a dedicated banner with Voice/Chat
+        // buttons in the body below — repeating it here as icons crowded a
+        // narrow phone's app bar enough to overflow the title (PRD calls for
+        // low-literacy-friendly, uncluttered screens).
         actions: [
-          IconButton(
-            tooltip: isTamil ? 'குரல் வழி உதவி (Voice Orb)' : 'Voice Assistant',
-            icon: const Icon(Icons.record_voice_over, color: Colors.teal),
-            onPressed: () => _push(context, const VoiceOrbScreen()),
-          ),
-          IconButton(
-            tooltip: isTamil ? 'ஆரோக்கியமித்ரா AI உதவியாளர்' : 'ArogyaMitra AI Assistant',
-            icon: const Icon(Icons.auto_awesome, color: Colors.teal),
-            onPressed: () => _push(context, const AiChatbotScreen()),
-          ),
           const _LanguageToggle(),
           const _NotificationBell(),
           IconButton(
@@ -206,7 +206,7 @@ class _HomeDashboardView extends ConsumerWidget {
             FamilyMemberSwitcher(isTamil: isTamil),
             const SizedBox(height: AmTokens.spaceMd),
 
-            // Emergency Care & Live 108 Ambulance Dispatch Banner
+            // Emergency Escalation & Live Ambulance Dispatch Banner
             Card(
               elevation: 0,
               color: Colors.red.shade50,
@@ -242,8 +242,8 @@ class _HomeDashboardView extends ConsumerWidget {
                           const SizedBox(height: 2),
                           Text(
                             isTamil
-                                ? 'உடனடி 108 ஆம்புலன்ஸ் & நேரலை கண்காணிப்பு'
-                                : 'Immediate 108 ambulance & live dispatch',
+                                ? 'உடனடி அவசர தீர்வு & நேரலை கண்காணிப்பு'
+                                : 'Immediate emergency escalation & live dispatch',
                             style: TextStyle(
                               color: Colors.red.shade700,
                               fontSize: 12,
@@ -259,7 +259,7 @@ class _HomeDashboardView extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       ),
                       onPressed: () => _push(context, const AmbulanceTrackerScreen()),
-                      child: Text(isTamil ? '108 நேரலை' : 'Track 108'),
+                      child: Text(isTamil ? 'அவசர தீர்வு' : 'Escalate Now'),
                     ),
                   ],
                 ),
@@ -267,7 +267,7 @@ class _HomeDashboardView extends ConsumerWidget {
             ),
             const SizedBox(height: AmTokens.spaceMd),
 
-            // 🤖 Mistral AI Chatbot Banner
+            // 🤖 AI Chatbot Banner
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -313,12 +313,16 @@ class _HomeDashboardView extends ConsumerWidget {
                             children: [
                               Row(
                                 children: [
-                                  Text(
-                                    isTamil ? 'ஆரோக்கியமித்ரா AI உதவியாளர்' : 'ArogyaMitra AI Chatbot',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
+                                  Flexible(
+                                    child: Text(
+                                      isTamil ? 'ஆரோக்கியமித்ரா AI உதவியாளர்' : 'ArogyaMitra AI Chatbot',
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 6),
@@ -329,7 +333,7 @@ class _HomeDashboardView extends ConsumerWidget {
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: const Text(
-                                      'MISTRAL AI',
+                                      'GROQ AI',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 8.5,
@@ -419,102 +423,6 @@ class _HomeDashboardView extends ConsumerWidget {
             ),
             const SizedBox(height: AmTokens.spaceLg),
 
-            // Vitals & Chronic Metric Quick Banner
-            Container(
-              padding: const EdgeInsets.all(AmTokens.spaceMd),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AmTokens.radiusLarge),
-                border: Border.all(color: AmTokens.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.monitor_heart_outlined, color: AmTokens.primary, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            isTamil ? 'சமீபத்திய உடல் அளவீடுகள்' : 'Daily Health Vitals',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                          ),
-                        ],
-                      ),
-                      TextButton(
-                        onPressed: () => _push(context, const VitalsTrackerScreen()),
-                        child: Text(isTamil ? 'அளவீடு பதிவு +' : 'Log & Track +'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.teal.shade50,
-                            borderRadius: BorderRadius.circular(AmTokens.radiusSmall),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(isTamil ? 'இரத்த அழுத்தம் (BP)' : 'Blood Pressure', style: const TextStyle(fontSize: 10, color: Colors.teal)),
-                              const SizedBox(height: 2),
-                              const Text('118 / 78', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.teal)),
-                              const Text('mmHg • Normal', style: TextStyle(fontSize: 10, color: Colors.teal)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.indigo.shade50,
-                            borderRadius: BorderRadius.circular(AmTokens.radiusSmall),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(isTamil ? 'சர்க்கரை அளவு' : 'Blood Glucose', style: const TextStyle(fontSize: 10, color: Colors.indigo)),
-                              const SizedBox(height: 2),
-                              const Text('104 mg/dL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.indigo)),
-                              const Text('Fasting • Normal', style: TextStyle(fontSize: 10, color: Colors.indigo)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.deepPurple.shade50,
-                            borderRadius: BorderRadius.circular(AmTokens.radiusSmall),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(isTamil ? 'துடிப்பு & SpO2' : 'Pulse & SpO2', style: const TextStyle(fontSize: 10, color: Colors.deepPurple)),
-                              const SizedBox(height: 2),
-                              const Text('72 bpm', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.deepPurple)),
-                              const Text('99% Saturation', style: TextStyle(fontSize: 10, color: Colors.deepPurple)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AmTokens.spaceLg),
-
             // Care Services (6 Modules in clean 2-column Rows)
             Text(
               isTamil ? 'மருத்துவ சேவைகள்' : 'Healthcare Services & Vault',
@@ -592,6 +500,30 @@ class _HomeDashboardView extends ConsumerWidget {
                 ),
               ],
             ),
+            const SizedBox(height: AmTokens.spaceMd),
+            Row(
+              children: [
+                Expanded(
+                  child: _QuickCard(
+                    title: isTamil ? 'உடல்நல அளவீடுகள்' : 'Vitals Tracker',
+                    subtitle: isTamil ? 'BP, சர்க்கரை, துடிப்பு' : 'BP, Glucose, Pulse',
+                    icon: Icons.monitor_heart_outlined,
+                    color: Colors.pink.shade700,
+                    onTap: () => _push(context, const VitalsTrackerScreen()),
+                  ),
+                ),
+                const SizedBox(width: AmTokens.spaceMd),
+                Expanded(
+                  child: _QuickCard(
+                    title: isTamil ? 'வீட்டு வருகை கோரிக்கை' : 'Request Home Visit',
+                    subtitle: isTamil ? 'ஆஷா / தொண்டர்' : 'ASHA / Volunteer',
+                    icon: Icons.house_outlined,
+                    color: Colors.brown.shade600,
+                    onTap: () => _push(context, const HomeVisitRequestScreen()),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: AmTokens.spaceLg),
 
             // Public Health Advisory Banner
@@ -637,16 +569,6 @@ class _HomeDashboardView extends ConsumerWidget {
             ),
             const SizedBox(height: AmTokens.spaceXl),
           ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'ai_chatbot_fab',
-        onPressed: () => _push(context, const AiChatbotScreen()),
-        backgroundColor: Colors.teal.shade700,
-        icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
-        label: Text(
-          isTamil ? 'AI மருத்துவ உதவி' : 'AI Health Assistant',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
     );
